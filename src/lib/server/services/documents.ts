@@ -1,0 +1,83 @@
+import { readFileSync } from "fs";
+import { join } from "path";
+import { connectDB } from "../db/connection";
+import { Incident } from "../db/models/Incident";
+
+let cachedSystemPrompt: string | null = null;
+
+function loadFile(filename: string): string {
+  const dataDir = join(process.cwd(), "src", "lib", "server", "data");
+  return readFileSync(join(dataDir, filename), "utf-8");
+}
+
+/**
+ * Format incidents into a compact text representation for the LLM context.
+ */
+function formatIncidents(
+  incidents: Array<{
+    incidentId: number;
+    title: string;
+    public_summary: string;
+    tags: Array<{ name: string; id: string }>;
+    competitions: Array<{ name: string }>;
+  }>,
+): string {
+  if (incidents.length === 0) return "No incidents available.";
+
+  return incidents
+    .map((inc) => {
+      const tags = inc.tags.map((t) => t.id || t.name).join(", ");
+      const comps = inc.competitions.map((c) => c.name).join(", ");
+      return [
+        `## Incident ${inc.incidentId}: ${inc.title}`,
+        tags ? `Related regulations: ${tags}` : "",
+        comps ? `Competition(s): ${comps}` : "",
+        "",
+        inc.public_summary,
+      ]
+        .filter(Boolean)
+        .join("\n");
+    })
+    .join("\n\n---\n\n");
+}
+
+/**
+ * Returns the full system prompt including WCA regulations and incident log.
+ * Loads prompt template from prompt.txt, regulations from regs.md,
+ * and incidents from the database.
+ */
+export async function getSystemPrompt(): Promise<string> {
+  if (cachedSystemPrompt) return cachedSystemPrompt;
+
+  // Load static files
+  const promptTemplate = loadFile("prompt.txt");
+  const regulations = loadFile("regs.md");
+
+  // Load incidents from DB
+  let incidentText: string;
+  try {
+    await connectDB();
+    const incidents = await Incident.find({}).sort({ incidentId: -1 }).lean();
+    incidentText = formatIncidents(incidents);
+  } catch (err) {
+    console.warn(
+      "[Documents] Failed to load incidents from DB, using empty:",
+      err,
+    );
+    incidentText = "Incident log is not available.";
+  }
+
+  // Substitute placeholders
+  cachedSystemPrompt = promptTemplate
+    .replace("{{regulations}}", regulations)
+    .replace("{{incident_log}}", incidentText);
+
+  return cachedSystemPrompt;
+}
+
+/**
+ * Clear the cached prompt (e.g., after syncing incidents).
+ */
+export function clearPromptCache(): void {
+  cachedSystemPrompt = null;
+}
