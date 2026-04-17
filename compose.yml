@@ -1,4 +1,17 @@
 services:
+  app:
+    build: .
+    container_name: regsgpt-app
+    env_file:
+      - .env
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongo
+    networks:
+      - regsgpt-net
+
   mongo:
     image: mongo:7
     container_name: regsgpt-mongo
@@ -7,6 +20,12 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    networks:
+      - regsgpt-net
 
 volumes:
   mongo_data:
+
+networks:
+  regsgpt-net:
+    driver: bridge
