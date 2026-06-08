@@ -1,10 +1,10 @@
-import { RouteDefinition, RouteSectionProps, createAsync } from "@solidjs/router";
 import { createSignal, createEffect } from "solid-js";
-import ChatWindow from "~/components/ChatWindow";
+import { RouteDefinition, RouteSectionProps, createAsync } from "@solidjs/router";
 import ChatInput from "~/components/ChatInput";
+import ChatWindow from "~/components/ChatWindow";
 import { getMessagesQuery } from "~/lib/server/services/conversations";
-import { setSidebarOpen } from "~/routes/c";
 import { getUserSession } from "~/lib/server/services/session";
+import { setSidebarOpen } from "~/routes/c";
 
 export const route = {
   load: ({ params }) => {
@@ -35,7 +35,7 @@ export default function ExistingChat(props: RouteSectionProps) {
     if (isRetry) {
       setLocalMessages((prev) => {
         const next = [...prev];
-        if (next.length > 0 && next[next.length - 1].role === "assistant") {
+        if (next.length > 0 && next.at(-1).role === "assistant") {
           next.pop();
         }
         return next;
@@ -117,7 +117,7 @@ export default function ExistingChat(props: RouteSectionProps) {
   const handleRetry = () => {
     const userMsgs = localMessages().filter((m) => m.role === "user");
     if (userMsgs.length === 0) return;
-    const lastUserMsg = userMsgs[userMsgs.length - 1];
+    const lastUserMsg = userMsgs.at(-1);
     handleSend(lastUserMsg.content, true);
   };
 

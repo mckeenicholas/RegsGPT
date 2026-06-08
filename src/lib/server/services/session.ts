@@ -1,7 +1,6 @@
+import { getRequestEvent } from "solid-js/web";
 import { action, query, redirect } from "@solidjs/router";
 import { appendResponseHeader } from "@solidjs/start/http";
-import type { APIEvent } from "@solidjs/start/server";
-import { getRequestEvent } from "solid-js/web";
 import {
   authenticateRequest,
   deleteSession,
@@ -60,7 +59,7 @@ export const logoutAction = action(async () => {
   } catch (error) {
     console.error("[Auth Session logoutAction] Error:", error);
     if (error instanceof Error) throw error;
-    throw new Error("Internal server error");
+    throw new Error("Internal server error", { cause: error });
   }
 
   throw redirect("/");

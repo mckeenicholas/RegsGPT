@@ -47,12 +47,12 @@ const ChatInput: Component<ChatInputProps> = (props) => {
   };
 
   return (
-    <div class="px-5 pb-5 pt-4 bg-bg-primary">
-      <div class="max-w-3xl mx-auto">
-        <div class="flex items-end gap-2 bg-bg-secondary border border-border rounded-xl px-3 py-2 transition-colors focus-within:border-accent focus-within:shadow-[0_0_0_2px_rgba(56,189,248,0.15)]">
+    <div class="bg-bg-primary px-5 pt-4 pb-5">
+      <div class="mx-auto max-w-3xl">
+        <div class="flex items-end gap-2 rounded-xl border border-border bg-bg-secondary px-3 py-2 transition-colors focus-within:border-accent focus-within:shadow-[0_0_0_2px_rgba(56,189,248,0.15)]">
           <textarea
             ref={textareaRef}
-            class="flex-1 bg-transparent border-none text-text-primary text-sm leading-5 resize-none outline-none max-h-37.5 min-h-8 py-1.5 placeholder:text-text-muted"
+            class="max-h-37.5 min-h-8 flex-1 resize-none border-none bg-transparent py-1.5 text-sm leading-5 text-text-primary outline-none placeholder:text-text-muted"
             placeholder="Ask about WCA regulations, guidelines, or precedents"
             value={value()}
             onInput={(e) => {
@@ -65,7 +65,7 @@ const ChatInput: Component<ChatInputProps> = (props) => {
             id="chat-input"
           />
           <button
-            class="w-8 h-8 rounded-lg bg-accent text-bg-primary flex items-center justify-center shrink-0 text-base transition-all hover:bg-accent-dim hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed"
+            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-base text-bg-primary transition-all hover:scale-105 hover:bg-accent-dim disabled:cursor-not-allowed disabled:opacity-40"
             onClick={handleSubmit}
             disabled={props.disabled || !value().trim()}
             title="Send message"
@@ -74,7 +74,7 @@ const ChatInput: Component<ChatInputProps> = (props) => {
             ↑
           </button>
         </div>
-        <div class="text-center mt-2 text-xs text-text-muted">
+        <div class="mt-2 text-center text-xs text-text-muted">
           RegsGPT can make mistakes. Always verify rulings with the official regulations.
         </div>
       </div>

@@ -1,11 +1,11 @@
 export default function NotFound() {
   return (
-    <div class="min-h-screen flex items-center justify-center bg-bg-primary relative overflow-hidden">
-      <div class="absolute w-125 h-125 rounded-full blur-[120px] opacity-15 bg-danger -top-48 -right-24" />
-      <div class="absolute w-125 h-125 rounded-full blur-[120px] opacity-10 bg-warning -bottom-48 -left-24" />
-      <div class="relative z-10 text-center p-12 card max-w-md w-full mx-4">
-        <h1 class="text-3xl font-bold text-text-primary mb-2">404</h1>
-        <p class="text-sm text-text-secondary leading-relaxed mb-8">
+    <div class="relative flex min-h-screen items-center justify-center overflow-hidden bg-bg-primary">
+      <div class="absolute -top-48 -right-24 h-125 w-125 rounded-full bg-danger opacity-15 blur-[120px]" />
+      <div class="absolute -bottom-48 -left-24 h-125 w-125 rounded-full bg-warning opacity-10 blur-[120px]" />
+      <div class="card relative z-10 mx-4 w-full max-w-md p-12 text-center">
+        <h1 class="mb-2 text-3xl font-bold text-text-primary">404</h1>
+        <p class="mb-8 text-sm leading-relaxed text-text-secondary">
           This page doesn't exist. Maybe the regulation you're looking for is in a different
           section?
         </p>

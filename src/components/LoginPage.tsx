@@ -27,23 +27,23 @@ const LoginPage: Component = () => {
   const loginURL = new URL(`${WCA_URL}/oauth/authorize?${loginURLParams.toString()}`);
 
   return (
-    <div class="min-h-screen flex items-center justify-center bg-bg-primary relative overflow-hidden">
+    <div class="relative flex min-h-screen items-center justify-center overflow-hidden bg-bg-primary">
       {/* Ambient glow effects */}
-      <div class="absolute w-125 h-125 rounded-full blur-[120px] opacity-15 bg-accent -top-48 -right-24" />
-      <div class="absolute w-125 h-125 rounded-full blur-[120px] opacity-10 bg-sky-400 -bottom-48 -left-24" />
+      <div class="absolute -top-48 -right-24 h-125 w-125 rounded-full bg-accent opacity-15 blur-[120px]" />
+      <div class="absolute -bottom-48 -left-24 h-125 w-125 rounded-full bg-sky-400 opacity-10 blur-[120px]" />
 
-      <div class="relative z-10 text-center p-12 card max-w-md w-full mx-4">
+      <div class="card relative z-10 mx-4 w-full max-w-md p-12 text-center">
         {/* Logo */}
-        <h1 class="text-3xl font-bold text-text-primary mb-2">
+        <h1 class="mb-2 text-3xl font-bold text-text-primary">
           Regs<span class="text-accent">GPT</span>
         </h1>
 
-        <p class="text-sm text-text-secondary leading-relaxed mb-8">
+        <p class="mb-8 text-sm leading-relaxed text-text-secondary">
           AI-powered assistant for WCA Delegates.
         </p>
 
         <a
-          class="btn btn-primary px-7 py-3 text-base gap-2.5 hover:shadow-[0_0_24px_rgba(56,189,248,0.25)] hover:-translate-y-0.5 active:translate-y-0 transition-all"
+          class="btn btn-primary gap-2.5 px-7 py-3 text-base transition-all hover:-translate-y-0.5 hover:shadow-[0_0_24px_rgba(56,189,248,0.25)] active:translate-y-0"
           href={loginURL.toString()}
           id="login-button"
         >
@@ -66,7 +66,7 @@ const LoginPage: Component = () => {
 
         {/* Error message */}
         <Show when={error()}>
-          <div class="mt-4 rounded-lg bg-danger/10 border border-danger/20 p-3 text-sm text-danger">
+          <div class="mt-4 rounded-lg border border-danger/20 bg-danger/10 p-3 text-sm text-danger">
             {error()}
           </div>
         </Show>

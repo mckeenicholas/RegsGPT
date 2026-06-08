@@ -1,0 +1,15 @@
+{
+  "ignorePatterns": ["node_modules", ".nitro", ".output", "dist"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "pedantic": "warn",
+    "perf": "warn"
+  },
+  "rules": {
+    "max-lines-per-function": "off",
+    "max-lines": "off",
+    "require-await": "off",
+    "no-inline-comments": "off"
+  }
+}

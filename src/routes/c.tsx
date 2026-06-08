@@ -1,5 +1,5 @@
-import { RouteDefinition, RouteSectionProps, createAsync, useAction } from "@solidjs/router";
 import { createSignal, Show, Suspense } from "solid-js";
+import { RouteDefinition, RouteSectionProps, createAsync, useAction } from "@solidjs/router";
 import ChatSidebar from "~/components/ChatSidebar";
 import LoginPage from "~/components/LoginPage";
 import {
@@ -31,10 +31,10 @@ export default function Layout(props: RouteSectionProps) {
 
   return (
     <Suspense
-      fallback={<div class="h-dvh w-full flex items-center justify-center">Loading session...</div>}
+      fallback={<div class="flex h-dvh w-full items-center justify-center">Loading session...</div>}
     >
       <Show when={user()} fallback={<LoginPage />}>
-        <div class="h-dvh w-full flex overflow-hidden">
+        <div class="flex h-dvh w-full overflow-hidden">
           <ChatSidebar
             conversations={conversations() || []}
             activeId={activeConvId()}
@@ -51,14 +51,14 @@ export default function Layout(props: RouteSectionProps) {
               }
             }}
             onClose={() => setSidebarOpen(false)}
-            userName={user()?.name!}
-            userWcaID={user()?.wcaID!}
-            userRequestsUsedToday={user()?.requestsUsedToday!}
-            userRequestCap={user()?.requestCap!}
+            userName={user()!.name}
+            userWcaID={user()!.wcaID}
+            userRequestsUsedToday={user()!.requestsUsedToday}
+            userRequestCap={user()!.requestCap}
             onLogout={() => logout()}
           />
 
-          <div class="flex-1 flex flex-col min-w-0 min-h-0 h-full">{props.children}</div>
+          <div class="flex h-full min-h-0 min-w-0 flex-1 flex-col">{props.children}</div>
         </div>
       </Show>
     </Suspense>

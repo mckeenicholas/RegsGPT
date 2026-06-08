@@ -1,0 +1,30 @@
+{
+  "printWidth": 100,
+  "tabWidth": 2,
+  "useTabs": false,
+  "singleQuote": false,
+  "sortPackageJson": true,
+  "ignorePatterns": ["node_modules", ".nitro", ".output", "dist"],
+  "sortImports": {
+    "newlinesBetween": false,
+    "customGroups": [
+      {
+        "groupName": "solidjs",
+        "elementNamePattern": ["solid-js", "solid-js/**"]
+      }
+    ],
+    "groups": [
+      "type-import",
+      "value-builtin",
+      "solidjs",
+      "value-external",
+      "value-internal",
+      ["value-parent", "value-sibling", "value-index"],
+      "unknown"
+    ]
+  },
+  "sortTailwindcss": {
+    "stylesheet": "src/app.css",
+    "preserveWhitespace": true
+  }
+}

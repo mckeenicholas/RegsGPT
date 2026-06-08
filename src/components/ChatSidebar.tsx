@@ -43,19 +43,19 @@ const ChatSidebar: Component<ChatSidebarProps> = (props) => {
       {/* Backdrop for mobile */}
       <Show when={props.isOpen}>
         <div
-          class="sidebar-backdrop fixed inset-0 bg-black/50 z-[99] hidden md:hidden"
+          class="sidebar-backdrop fixed inset-0 z-[99] hidden bg-black/50 md:hidden"
           onClick={() => props.onClose()}
         />
       </Show>
 
       <aside
-        class={`w-[280px] min-w-[280px] h-full bg-bg-secondary border-r border-border flex flex-col z-[100] transition-transform duration-250
-          max-md:fixed max-md:left-0 max-md:top-0 max-md:h-screen ${props.isOpen ? "max-md:translate-x-0 max-md:shadow-2xl" : "max-md:-translate-x-full"}`}
+        class={`z-[100] flex h-full w-[280px] min-w-[280px] flex-col border-r border-border bg-bg-secondary transition-transform duration-250
+          max-md:fixed max-md:top-0 max-md:left-0 max-md:h-screen ${props.isOpen ? "max-md:translate-x-0 max-md:shadow-2xl" : "max-md:-translate-x-full"}`}
       >
         {/* New Chat Button */}
-        <div class="p-4 border-b border-border/50">
+        <div class="border-b border-border/50 p-4">
           <button
-            class="btn btn-primary w-full py-2.5 gap-2"
+            class="btn btn-primary w-full gap-2 py-2.5"
             onClick={() => props.onNewChat()}
             id="new-chat-button"
           >
@@ -69,7 +69,7 @@ const ChatSidebar: Component<ChatSidebarProps> = (props) => {
           <Show
             when={props.conversations.length > 0}
             fallback={
-              <div class="px-4 py-5 text-center text-text-muted text-sm">
+              <div class="px-4 py-5 text-center text-sm text-text-muted">
                 No conversations yet.
                 <br />
                 Start a new chat!
@@ -80,22 +80,22 @@ const ChatSidebar: Component<ChatSidebarProps> = (props) => {
               {(conv) => (
                 <A
                   href={`/c/${conv.id}`}
-                  class={`conversation-item flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-colors mb-0.5
+                  class={`conversation-item mb-0.5 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2.5 transition-colors
                     ${
                       props.activeId === conv.id
-                        ? "bg-accent/10 border border-accent/20"
+                        ? "border border-accent/20 bg-accent/10"
                         : "hover:bg-bg-hover"
                     }`}
                   onClick={() => {
                     props.onClose();
                   }}
                 >
-                  <div class="flex-1 min-w-0">
-                    <div class="text-sm text-text-primary truncate">{conv.title}</div>
-                    <div class="text-xs text-text-muted mt-0.5">{timeAgo(conv.updatedAt)}</div>
+                  <div class="min-w-0 flex-1">
+                    <div class="truncate text-sm text-text-primary">{conv.title}</div>
+                    <div class="mt-0.5 text-xs text-text-muted">{timeAgo(conv.updatedAt)}</div>
                   </div>
                   <button
-                    class="delete-btn shrink-0 p-1 rounded text-text-muted hover:text-danger hover:bg-danger/10 text-sm transition-colors"
+                    class="delete-btn shrink-0 rounded p-1 text-sm text-text-muted transition-colors hover:bg-danger/10 hover:text-danger"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();

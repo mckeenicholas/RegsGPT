@@ -213,7 +213,7 @@ export async function deleteAllUserSessions(userId: string): Promise<void> {
  */
 export function getTokenFromRequest(request: Request): string | null {
   const cookieHeader = request.headers.get("Cookie") || "";
-  const match = cookieHeader.match(/(?:^|;\s*)session_token=([^;]+)/);
+  const match = cookieHeader.match(/(?:^|;\s*)session_token=([^;]+)/u);
   return match ? match[1] : null;
 }
 

@@ -1,9 +1,9 @@
 import type { APIEvent } from "@solidjs/start/server";
-import { authenticateRequest } from "~/lib/server/services/auth";
 import { connectDB } from "~/lib/server/db/connection";
 import { Conversation } from "~/lib/server/db/models/Conversation";
 import { Message } from "~/lib/server/db/models/Message";
 import { User } from "~/lib/server/db/models/User";
+import { authenticateRequest } from "~/lib/server/services/auth";
 import { streamChat, isOverRequestCap, type ChatMessage } from "~/lib/server/services/gemini";
 
 /**
@@ -124,19 +124,19 @@ export async function POST(event: APIEvent) {
           });
 
           // Update user request count
-          if (user.lastRequestDate !== today) {
+          if (user.lastRequestDate === today) {
+            await User.updateOne({ _id: user._id }, { $inc: { requestsUsedToday: 1 } });
+          } else {
             await User.updateOne(
               { _id: user._id },
               { $set: { requestsUsedToday: 1, lastRequestDate: today } },
             );
-          } else {
-            await User.updateOne({ _id: user._id }, { $inc: { requestsUsedToday: 1 } });
           }
 
           // Auto-generate conversation title from first user message
           if (conversation.title === "New Chat") {
             const title =
-              message.trim().length > 50 ? message.trim().substring(0, 50) + "..." : message.trim();
+              message.trim().length > 50 ? message.trim().slice(0, 50) + "..." : message.trim();
             await Conversation.updateOne({ _id: conversationId }, { title });
           }
 

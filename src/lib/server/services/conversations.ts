@@ -1,9 +1,9 @@
-import { query, action, redirect } from "@solidjs/router";
 import { getRequestEvent } from "solid-js/web";
-import { authenticateRequest } from "~/lib/server/services/auth";
+import { query, action, redirect } from "@solidjs/router";
 import { connectDB } from "~/lib/server/db/connection";
 import { Conversation } from "~/lib/server/db/models/Conversation";
 import { Message } from "~/lib/server/db/models/Message";
+import { authenticateRequest } from "~/lib/server/services/auth";
 
 export const getConversationsQuery = query(async () => {
   "use server";

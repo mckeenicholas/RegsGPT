@@ -1,7 +1,7 @@
 import { createSignal } from "solid-js";
 import { createAsync } from "@solidjs/router";
-import ChatWindow from "~/components/ChatWindow";
 import ChatInput from "~/components/ChatInput";
+import ChatWindow from "~/components/ChatWindow";
 import { createConversationRPC } from "~/lib/server/services/conversations";
 import { getUserSession } from "~/lib/server/services/session";
 import { setSidebarOpen } from "~/routes/c";
@@ -51,7 +51,7 @@ export default function NewChat() {
             if (event.type === "chunk") {
               fullResponse += event.text;
               document
-                .getElementById("streaming-content")
+                .querySelector("#streaming-content")
                 ?.dispatchEvent(new CustomEvent("stream-update", { detail: fullResponse }));
             }
           } catch (e) {
