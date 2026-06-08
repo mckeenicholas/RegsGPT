@@ -1,7 +1,6 @@
 import { createSignal, Show, Suspense } from "solid-js";
-import { RouteDefinition, RouteSectionProps, createAsync, useAction } from "@solidjs/router";
+import { RouteDefinition, RouteSectionProps, createAsync, useAction, redirect } from "@solidjs/router";
 import ChatSidebar from "~/components/ChatSidebar";
-import LoginPage from "~/components/LoginPage";
 import {
   getConversationsQuery,
   createConversationAction,
@@ -11,8 +10,11 @@ import { getUserSession } from "~/lib/server/services/session";
 import { logoutAction } from "~/lib/server/services/session";
 
 export const route = {
-  load: () => {
-    getUserSession();
+  load: async () => {
+    const user = await getUserSession();
+    if (!user) {
+      throw redirect("/");
+    }
     getConversationsQuery();
   },
 } satisfies RouteDefinition;
@@ -33,7 +35,7 @@ export default function Layout(props: RouteSectionProps) {
     <Suspense
       fallback={<div class="flex h-dvh w-full items-center justify-center">Loading session...</div>}
     >
-      <Show when={user()} fallback={<LoginPage />}>
+      <Show when={user()}>
         <div class="flex h-dvh w-full overflow-hidden">
           <ChatSidebar
             conversations={conversations() || []}
