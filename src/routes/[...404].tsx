@@ -6,14 +6,10 @@ export default function NotFound() {
       <div class="relative z-10 text-center p-12 card max-w-md w-full mx-4">
         <h1 class="text-3xl font-bold text-text-primary mb-2">404</h1>
         <p class="text-sm text-text-secondary leading-relaxed mb-8">
-          This page doesn't exist. Maybe the regulation you're looking for is in
-          a different section?
+          This page doesn't exist. Maybe the regulation you're looking for is in a different
+          section?
         </p>
-        <a
-          href="/"
-          class="btn btn-primary px-6 py-2.5 text-base"
-          id="back-home-button"
-        >
+        <a href="/" class="btn btn-primary px-6 py-2.5 text-base" id="back-home-button">
           ← Back to RegsGPT
         </a>
       </div>

@@ -18,8 +18,8 @@ interface ChatSidebarProps {
   onClose: () => void;
   userName: string;
   userWcaID: string;
-  userTokensUsed: number;
-  userTokenCap: number;
+  userRequestsUsedToday: number;
+  userRequestCap: number;
   onLogout: () => void;
 }
 
@@ -91,23 +91,15 @@ const ChatSidebar: Component<ChatSidebarProps> = (props) => {
                   }}
                 >
                   <div class="flex-1 min-w-0">
-                    <div class="text-sm text-text-primary truncate">
-                      {conv.title}
-                    </div>
-                    <div class="text-xs text-text-muted mt-0.5">
-                      {timeAgo(conv.updatedAt)}
-                    </div>
+                    <div class="text-sm text-text-primary truncate">{conv.title}</div>
+                    <div class="text-xs text-text-muted mt-0.5">{timeAgo(conv.updatedAt)}</div>
                   </div>
                   <button
                     class="delete-btn shrink-0 p-1 rounded text-text-muted hover:text-danger hover:bg-danger/10 text-sm transition-colors"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      if (
-                        window.confirm(
-                          "Delete this conversation? This cannot be undone.",
-                        )
-                      ) {
+                      if (window.confirm("Delete this conversation? This cannot be undone.")) {
                         props.onDelete(conv.id);
                       }
                     }}
@@ -125,8 +117,8 @@ const ChatSidebar: Component<ChatSidebarProps> = (props) => {
         <UserMenu
           name={props.userName}
           wcaID={props.userWcaID}
-          tokensUsed={props.userTokensUsed}
-          tokenCap={props.userTokenCap}
+          requestsUsedToday={props.userRequestsUsedToday}
+          requestCap={props.userRequestCap}
           onLogout={props.onLogout}
         />
       </aside>

@@ -24,9 +24,7 @@ const LoginPage: Component = () => {
     scope: "public",
   });
 
-  const loginURL = new URL(
-    `${WCA_URL}/oauth/authorize?${loginURLParams.toString()}`,
-  );
+  const loginURL = new URL(`${WCA_URL}/oauth/authorize?${loginURLParams.toString()}`);
 
   return (
     <div class="min-h-screen flex items-center justify-center bg-bg-primary relative overflow-hidden">

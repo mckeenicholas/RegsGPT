@@ -48,9 +48,7 @@ export const getMessagesQuery = query(async (id: string) => {
     throw redirect("/c");
   }
 
-  const messages = await Message.find({ conversationId: id })
-    .sort({ createdAt: 1 })
-    .lean();
+  const messages = await Message.find({ conversationId: id }).sort({ createdAt: 1 }).lean();
 
   return {
     conversation: {

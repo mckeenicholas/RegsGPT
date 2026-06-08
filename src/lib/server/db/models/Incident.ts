@@ -66,5 +66,4 @@ const IncidentSchema = new Schema<IIncidentDocument>(
 );
 
 export const Incident: Model<IIncidentDocument> =
-  mongoose.models.Incident ||
-  mongoose.model<IIncidentDocument>("Incident", IncidentSchema);
+  mongoose.models.Incident || mongoose.model<IIncidentDocument>("Incident", IncidentSchema);

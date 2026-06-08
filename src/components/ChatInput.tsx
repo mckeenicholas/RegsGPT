@@ -75,8 +75,7 @@ const ChatInput: Component<ChatInputProps> = (props) => {
           </button>
         </div>
         <div class="text-center mt-2 text-xs text-text-muted">
-          RegsGPT can make mistakes. Always verify rulings with the official
-          regulations.
+          RegsGPT can make mistakes. Always verify rulings with the official regulations.
         </div>
       </div>
     </div>

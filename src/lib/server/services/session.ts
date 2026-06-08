@@ -8,13 +8,12 @@ import {
   getTokenFromRequest,
 } from "~/lib/server/services/auth";
 
-
 export const getUserSession = query(async () => {
   "use server";
   const event = getRequestEvent();
 
   if (!event) {
-    throw new Error("Unable to load session")
+    throw new Error("Unable to load session");
   }
 
   try {
@@ -24,13 +23,17 @@ export const getUserSession = query(async () => {
       return null;
     }
 
+    const today = new Date().toISOString().split("T")[0];
+    const requestsUsed = user.lastRequestDate === today ? user.requestsUsedToday : 0;
+    const requestCap = Number(process.env.REQUEST_CAP) || 50;
+
     return {
       id: user._id.toString(),
       wcaUserID: user.wcaUserID,
       wcaID: user.wcaID,
       name: user.name,
-      tokensUsed: user.tokensUsed,
-      tokenCap: user.tokenCap,
+      requestsUsedToday: requestsUsed,
+      requestCap,
     };
   } catch (error) {
     console.error("[Auth Session Query] Error:", error);
@@ -38,14 +41,12 @@ export const getUserSession = query(async () => {
   }
 }, "userSession");
 
-
-
 export const logoutAction = action(async () => {
   "use server";
   const event = getRequestEvent();
 
   if (!event) {
-    throw new Error("Unable to load session")
+    throw new Error("Unable to load session");
   }
 
   try {
@@ -55,11 +56,7 @@ export const logoutAction = action(async () => {
       await deleteSession(token);
     }
 
-    appendResponseHeader(
-      "Set-Cookie",
-      "session_token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0"
-    );
-
+    appendResponseHeader("Set-Cookie", "session_token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0");
   } catch (error) {
     console.error("[Auth Session logoutAction] Error:", error);
     if (error instanceof Error) throw error;
@@ -68,4 +65,3 @@ export const logoutAction = action(async () => {
 
   throw redirect("/");
 }, "logout");
-

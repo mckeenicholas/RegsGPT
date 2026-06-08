@@ -4,21 +4,21 @@ export interface IUser {
   wcaUserID: number;
   wcaID: string;
   name: string;
-  tokensUsed: number;
-  tokenCap: number;
+  requestsUsedToday: number;
+  lastRequestDate: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface IUserDocument extends IUser, Document { }
+export interface IUserDocument extends IUser, Document {}
 
 const UserSchema = new Schema<IUserDocument>(
   {
     wcaUserID: { type: Number, required: true, unique: true, index: true },
     wcaID: { type: String, required: true, unique: true, index: true },
     name: { type: String, required: true },
-    tokensUsed: { type: Number, default: 0 },
-    tokenCap: { type: Number, default: Number(process.env.TOKEN_CAP) },
+    requestsUsedToday: { type: Number, default: 0 },
+    lastRequestDate: { type: String, default: "" },
   },
   {
     timestamps: true,

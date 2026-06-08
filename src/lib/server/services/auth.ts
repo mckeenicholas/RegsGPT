@@ -43,11 +43,8 @@ interface WCAUserResponseInfo {
 /**
  * Exchange an authorization code for WCA OAuth tokens.
  */
-export async function exchangeWCACode(
-  accessCode: string,
-): Promise<WCAOauthResponse> {
-  const { WCA_URL, APPLICATION_ID, APPLICATION_SECRET, REDIRECT_URI } =
-    getWCAConfig();
+export async function exchangeWCACode(accessCode: string): Promise<WCAOauthResponse> {
+  const { WCA_URL, APPLICATION_ID, APPLICATION_SECRET, REDIRECT_URI } = getWCAConfig();
 
   const response = await fetch(`${WCA_URL}/oauth/token`, {
     method: "POST",
@@ -63,10 +60,7 @@ export async function exchangeWCACode(
 
   if (!response.ok) {
     const text = await response.text();
-    console.error(
-      `[WCA OAuth] Token exchange failed: ${response.status}`,
-      text,
-    );
+    console.error(`[WCA OAuth] Token exchange failed: ${response.status}`, text);
     throw new Error(`WCA token exchange failed: ${response.status}`);
   }
 
@@ -76,9 +70,7 @@ export async function exchangeWCACode(
 /**
  * Refresh an expired WCA access token.
  */
-export async function refreshWCAToken(
-  refreshToken: string,
-): Promise<WCAOauthResponse> {
+export async function refreshWCAToken(refreshToken: string): Promise<WCAOauthResponse> {
   const { WCA_URL, APPLICATION_ID, APPLICATION_SECRET } = getWCAConfig();
 
   const response = await fetch(`${WCA_URL}/oauth/token`, {
@@ -102,9 +94,7 @@ export async function refreshWCAToken(
 /**
  * Fetch the authenticated user's info from the WCA API.
  */
-export async function fetchWCAUser(
-  accessToken: string,
-): Promise<WCAUserResponseInfo> {
+export async function fetchWCAUser(accessToken: string): Promise<WCAUserResponseInfo> {
   const { WCA_URL } = getWCAConfig();
 
   const response = await fetch(`${WCA_URL}/api/v0/me`, {
@@ -121,9 +111,7 @@ export async function fetchWCAUser(
 /**
  * Get (and auto-refresh if expired) the WCA access token for a session.
  */
-export async function getWCAToken(
-  sessionToken: string,
-): Promise<string | null> {
+export async function getWCAToken(sessionToken: string): Promise<string | null> {
   await connectDB();
 
   const session = await Session.findOne({ token: sessionToken });
@@ -135,9 +123,7 @@ export async function getWCAToken(
     // Token expired — refresh it
     try {
       const newTokens = await refreshWCAToken(session.wcaRefreshToken);
-      const newExpiry = new Date(
-        newTokens.created_at * 1000 + newTokens.expires_in * 1000,
-      );
+      const newExpiry = new Date(newTokens.created_at * 1000 + newTokens.expires_in * 1000);
 
       await Session.updateOne(
         { _id: session._id },
@@ -193,9 +179,7 @@ export async function createSession(
 /**
  * Validate a session token. Returns the user document if valid, null otherwise.
  */
-export async function validateSession(
-  token: string,
-): Promise<IUserDocument | null> {
+export async function validateSession(token: string): Promise<IUserDocument | null> {
   if (!token) return null;
   await connectDB();
 
@@ -236,9 +220,7 @@ export function getTokenFromRequest(request: Request): string | null {
 /**
  * Full auth flow: extract token from request → validate → return user or null.
  */
-export async function authenticateRequest(
-  request: Request,
-): Promise<IUserDocument | null> {
+export async function authenticateRequest(request: Request): Promise<IUserDocument | null> {
   const token = getTokenFromRequest(request);
   if (!token) return null;
   return validateSession(token);
@@ -258,7 +240,7 @@ export async function findOrCreateUser(wcaData: {
     { wcaUserID: wcaData.wcaUserID },
     {
       $set: { name: wcaData.name, wcaID: wcaData.wcaID },
-      $setOnInsert: { tokensUsed: 0, tokenCap: process.env.TOKEN_CAP },
+      $setOnInsert: { requestsUsedToday: 0, lastRequestDate: "" },
     },
     { upsert: true, new: true, runValidators: true },
   );

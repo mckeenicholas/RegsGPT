@@ -52,9 +52,7 @@ export default function NewChat() {
               fullResponse += event.text;
               document
                 .getElementById("streaming-content")
-                ?.dispatchEvent(
-                  new CustomEvent("stream-update", { detail: fullResponse }),
-                );
+                ?.dispatchEvent(new CustomEvent("stream-update", { detail: fullResponse }));
             }
           } catch (e) {
             console.error("Streaming error", e);
@@ -66,9 +64,7 @@ export default function NewChat() {
       window.location.href = `/c/${newId}`;
     } catch (e) {
       console.error(e);
-      setMessages([
-        { role: "assistant", content: "⚠️ Failed to start conversation." },
-      ]);
+      setMessages([{ role: "assistant", content: "⚠️ Failed to start conversation." }]);
       setIsStreaming(false);
     }
   };

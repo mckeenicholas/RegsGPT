@@ -1,8 +1,4 @@
-import {
-  RouteDefinition,
-  RouteSectionProps,
-  createAsync,
-} from "@solidjs/router";
+import { RouteDefinition, RouteSectionProps, createAsync } from "@solidjs/router";
 import { createSignal, createEffect } from "solid-js";
 import ChatWindow from "~/components/ChatWindow";
 import ChatInput from "~/components/ChatInput";
@@ -32,11 +28,21 @@ export default function ExistingChat(props: RouteSectionProps) {
     }
   });
 
-  const handleSend = async (message: string) => {
+  const handleSend = async (message: string, isRetry = false) => {
     const convId = props.params.id;
     if (!convId) return;
 
-    setLocalMessages((prev) => [...prev, { role: "user", content: message }]);
+    if (isRetry) {
+      setLocalMessages((prev) => {
+        const next = [...prev];
+        if (next.length > 0 && next[next.length - 1].role === "assistant") {
+          next.pop();
+        }
+        return next;
+      });
+    } else {
+      setLocalMessages((prev) => [...prev, { role: "user", content: message }]);
+    }
     setIsStreaming(true);
     setStreamingContent("");
     setPendingSuggestion("");
@@ -45,7 +51,7 @@ export default function ExistingChat(props: RouteSectionProps) {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId: convId, message }),
+        body: JSON.stringify({ conversationId: convId, message, isRetry }),
       });
 
       if (!res.ok || !res.body) {
@@ -77,10 +83,7 @@ export default function ExistingChat(props: RouteSectionProps) {
               fullResponse += event.text;
               setStreamingContent(fullResponse);
             } else if (event.type === "done") {
-              setLocalMessages((prev) => [
-                ...prev,
-                { role: "assistant", content: fullResponse },
-              ]);
+              setLocalMessages((prev) => [...prev, { role: "assistant", content: fullResponse }]);
               setIsStreaming(false);
               setStreamingContent("");
             } else if (event.type === "error") {
@@ -111,6 +114,13 @@ export default function ExistingChat(props: RouteSectionProps) {
     }
   };
 
+  const handleRetry = () => {
+    const userMsgs = localMessages().filter((m) => m.role === "user");
+    if (userMsgs.length === 0) return;
+    const lastUserMsg = userMsgs[userMsgs.length - 1];
+    handleSend(lastUserMsg.content, true);
+  };
+
   return (
     <>
       <ChatWindow
@@ -121,12 +131,9 @@ export default function ExistingChat(props: RouteSectionProps) {
         userName={user()?.name || "User"}
         onSuggestionClick={(text) => handleSend(text)}
         onToggleSidebar={() => setSidebarOpen((v) => !v)}
+        onRetry={handleRetry}
       />
-      <ChatInput
-        onSend={handleSend}
-        disabled={isStreaming()}
-        initialValue={pendingSuggestion()}
-      />
+      <ChatInput onSend={handleSend} disabled={isStreaming()} initialValue={pendingSuggestion()} />
     </>
   );
 }

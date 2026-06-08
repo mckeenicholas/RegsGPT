@@ -16,15 +16,9 @@ function substituteLinks(text: string): string {
         (_, id) => `[Regulation ${id}](${WCA_BASE}/regulations/#${id})`,
       )
       // [case:169] → [Incident 169](https://www.worldcubeassociation.org/incidents/169)
-      .replace(
-        /\[case:(\d+)\]/gi,
-        (_, id) => `[Incident ${id}](${WCA_BASE}/incidents/${id})`,
-      )
+      .replace(/\[case:(\d+)\]/gi, (_, id) => `[Incident ${id}](${WCA_BASE}/incidents/${id})`)
       // [comp:WC2025] → [Competition WC2025](https://www.worldcubeassociation.org/competitions/WC2025)
-      .replace(
-        /\[comp:([^\]]+)\]/gi,
-        (_, id) => `[${id}](${WCA_BASE}/competitions/${id})`,
-      )
+      .replace(/\[comp:([^\]]+)\]/gi, (_, id) => `[${id}](${WCA_BASE}/competitions/${id})`)
   );
 }
 
@@ -42,6 +36,7 @@ interface ChatWindowProps {
   onSuggestionClick: (text: string) => void;
   onToggleSidebar: () => void;
   userName: string;
+  onRetry?: () => void;
 }
 
 const ChatWindow: Component<ChatWindowProps> = (props) => {
@@ -96,10 +91,11 @@ const ChatWindow: Component<ChatWindowProps> = (props) => {
                 <div class="mb-6 animate-message-in">
                   <div class="flex items-center gap-2 mb-1.5">
                     <div
-                      class={`w-6 h-6 rounded flex items-center justify-center text-xs font-semibold shrink-0 ${msg.role === "user"
-                        ? "bg-bg-hover text-text-secondary"
-                        : "bg-linear-to-br from-accent to-accent-dim text-bg-primary"
-                        }`}
+                      class={`w-6 h-6 rounded flex items-center justify-center text-xs font-semibold shrink-0 ${
+                        msg.role === "user"
+                          ? "bg-bg-hover text-text-secondary"
+                          : "bg-linear-to-br from-accent to-accent-dim text-bg-primary"
+                      }`}
                     >
                       {msg.role === "user"
                         ? props.userName
@@ -112,11 +108,21 @@ const ChatWindow: Component<ChatWindowProps> = (props) => {
                     </span>
                   </div>
                   <div class="pl-8 text-sm leading-relaxed text-text-primary prose-markdown">
-                    <Show
-                      when={msg.role === "assistant"}
-                      fallback={<p>{msg.content}</p>}
-                    >
+                    <Show when={msg.role === "assistant"} fallback={<p>{msg.content}</p>}>
                       <SolidMarkdown children={substituteLinks(msg.content)} />
+                    </Show>
+
+                    <Show
+                      when={
+                        msg.role === "assistant" && msg.content.startsWith("⚠️") && props.onRetry
+                      }
+                    >
+                      <button
+                        onClick={() => props.onRetry!()}
+                        class="mt-2.5 px-3.5 py-1.5 bg-accent/10 hover:bg-accent/20 border border-accent/30 hover:border-accent/40 text-accent text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        ↻ Retry
+                      </button>
                     </Show>
                   </div>
                 </div>
@@ -130,9 +136,7 @@ const ChatWindow: Component<ChatWindowProps> = (props) => {
                   <div class="w-6 h-6 rounded flex items-center justify-center text-xs font-semibold shrink-0 bg-linear-to-br from-accent to-accent-dim text-bg-primary">
                     R
                   </div>
-                  <span class="text-sm font-semibold text-text-secondary">
-                    RegsGPT
-                  </span>
+                  <span class="text-sm font-semibold text-text-secondary">RegsGPT</span>
                 </div>
                 <div class="pl-8 text-sm leading-relaxed text-text-primary prose-markdown">
                   <Show

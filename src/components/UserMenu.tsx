@@ -3,15 +3,9 @@ import { Component } from "solid-js";
 interface UserMenuProps {
   name: string;
   wcaID: string;
-  tokensUsed: number;
-  tokenCap: number;
+  requestsUsedToday: number;
+  requestCap: number;
   onLogout: () => void;
-}
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
 }
 
 const UserMenu: Component<UserMenuProps> = (props) => {
@@ -29,12 +23,9 @@ const UserMenu: Component<UserMenuProps> = (props) => {
         {initials()}
       </div>
       <div class="flex-1 min-w-0">
-        <div class="text-sm font-medium text-text-primary truncate">
-          {props.name}
-        </div>
+        <div class="text-sm font-medium text-text-primary truncate">{props.name}</div>
         <div class="text-xs text-text-muted">
-          {formatTokens(props.tokensUsed)} / {formatTokens(props.tokenCap)}{" "}
-          tokens
+          {props.requestsUsedToday} / {props.requestCap} requests today
         </div>
       </div>
       <button

@@ -60,10 +60,7 @@ export async function getSystemPrompt(): Promise<string> {
     const incidents = await Incident.find({}).sort({ incidentId: -1 }).lean();
     incidentText = formatIncidents(incidents);
   } catch (err) {
-    console.warn(
-      "[Documents] Failed to load incidents from DB, using empty:",
-      err,
-    );
+    console.warn("[Documents] Failed to load incidents from DB, using empty:", err);
     incidentText = "Incident log is not available.";
   }
 

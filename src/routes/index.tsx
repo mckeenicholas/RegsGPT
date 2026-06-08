@@ -14,10 +14,7 @@ export default function Home() {
   });
 
   return (
-    <Show 
-      when={user()} 
-      fallback={<LoginPage />}
-    >
+    <Show when={user()} fallback={<LoginPage />}>
       <div class="h-dvh w-full flex items-center justify-center bg-bg-primary text-text-primary">
         Loading RegsGPT...
       </div>

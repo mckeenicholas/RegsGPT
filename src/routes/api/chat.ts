@@ -4,11 +4,7 @@ import { connectDB } from "~/lib/server/db/connection";
 import { Conversation } from "~/lib/server/db/models/Conversation";
 import { Message } from "~/lib/server/db/models/Message";
 import { User } from "~/lib/server/db/models/User";
-import {
-  streamChat,
-  isOverTokenCap,
-  type ChatMessage,
-} from "~/lib/server/services/gemini";
+import { streamChat, isOverRequestCap, type ChatMessage } from "~/lib/server/services/gemini";
 
 /**
  * POST /api/chat — streaming chat endpoint (SSE)
@@ -35,10 +31,14 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    // Check token cap
-    if (isOverTokenCap(user.tokensUsed, user.tokenCap)) {
+    // Check request cap
+    const today = new Date().toISOString().split("T")[0];
+    const requestsUsed = user.lastRequestDate === today ? user.requestsUsedToday : 0;
+    const requestCap = Number(process.env.REQUEST_CAP) || 50;
+
+    if (isOverRequestCap(requestsUsed, requestCap)) {
       return new Response(
-        `data: ${JSON.stringify({ type: "error", message: "Token usage limit reached. Please contact an administrator." })}\n\n`,
+        `data: ${JSON.stringify({ type: "error", message: "Daily request limit reached (50 requests per day)." })}\n\n`,
         {
           status: 429,
           headers: { "Content-Type": "text/event-stream" },
@@ -47,7 +47,7 @@ export async function POST(event: APIEvent) {
     }
 
     const body = await event.request.json();
-    const { conversationId, message } = body;
+    const { conversationId, message, isRetry } = body;
 
     if (!conversationId || !message?.trim()) {
       return new Response(
@@ -77,18 +77,18 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    // Save the user message immediately
-    await Message.create({
-      conversationId,
-      role: "user",
-      content: message.trim(),
-      tokensUsed: 0,
-    });
+    // Save the user message immediately if not a retry
+    if (!isRetry) {
+      await Message.create({
+        conversationId,
+        role: "user",
+        content: message.trim(),
+        tokensUsed: 0,
+      });
+    }
 
     // Load conversation history
-    const previousMessages = await Message.find({ conversationId })
-      .sort({ createdAt: 1 })
-      .lean();
+    const previousMessages = await Message.find({ conversationId }).sort({ createdAt: 1 }).lean();
 
     const history: ChatMessage[] = previousMessages
       .filter((m: any) => m.role !== "user" || m.content !== message.trim()) // exclude the just-added message
@@ -123,18 +123,20 @@ export async function POST(event: APIEvent) {
             tokensUsed: usage.totalTokens,
           });
 
-          // Update user token usage
-          await User.updateOne(
-            { _id: user._id },
-            { $inc: { tokensUsed: usage.totalTokens } },
-          );
+          // Update user request count
+          if (user.lastRequestDate !== today) {
+            await User.updateOne(
+              { _id: user._id },
+              { $set: { requestsUsedToday: 1, lastRequestDate: today } },
+            );
+          } else {
+            await User.updateOne({ _id: user._id }, { $inc: { requestsUsedToday: 1 } });
+          }
 
           // Auto-generate conversation title from first user message
           if (conversation.title === "New Chat") {
             const title =
-              message.trim().length > 50
-                ? message.trim().substring(0, 50) + "..."
-                : message.trim();
+              message.trim().length > 50 ? message.trim().substring(0, 50) + "..." : message.trim();
             await Conversation.updateOne({ _id: conversationId }, { title });
           }
 

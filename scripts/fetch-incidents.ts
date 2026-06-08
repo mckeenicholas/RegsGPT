@@ -36,16 +36,12 @@ interface WCAIncident {
 }
 
 async function fetchIncidents(): Promise<WCAIncident[]> {
-  console.log(
-    `[Fetch] Fetching incidents from ${WCA_API_URL}?per_page=${PER_PAGE}`,
-  );
+  console.log(`[Fetch] Fetching incidents from ${WCA_API_URL}?per_page=${PER_PAGE}`);
 
   const response = await fetch(`${WCA_API_URL}?per_page=${PER_PAGE}`);
 
   if (!response.ok) {
-    throw new Error(
-      `Failed to fetch incidents: ${response.status} ${response.statusText}`,
-    );
+    throw new Error(`Failed to fetch incidents: ${response.status} ${response.statusText}`);
   }
 
   const data: WCAIncident[] = await response.json();
@@ -67,9 +63,7 @@ async function upsertIncidents(incidents: WCAIncident[]): Promise<void> {
           public_summary: incident.public_summary,
           created_at: new Date(incident.created_at),
           updated_at: new Date(incident.updated_at),
-          resolved_at: incident.resolved_at
-            ? new Date(incident.resolved_at)
-            : null,
+          resolved_at: incident.resolved_at ? new Date(incident.resolved_at) : null,
           url: incident.url,
           tags: incident.tags.map((t) => ({
             name: t.name,

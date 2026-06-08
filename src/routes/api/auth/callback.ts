@@ -32,9 +32,7 @@ export async function GET(event: APIEvent) {
       name,
     });
 
-    const wcaTokenExpiresAt = new Date(
-      oAuthData.created_at * 1000 + oAuthData.expires_in * 1000,
-    );
+    const wcaTokenExpiresAt = new Date(oAuthData.created_at * 1000 + oAuthData.expires_in * 1000);
 
     const { token, expiresAt } = await createSession(
       user._id.toString(),

@@ -54,7 +54,7 @@ export async function streamChat(
   });
 
   const response = await ai.models.generateContentStream({
-    model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
+    model: process.env.GEMINI_MODEL!,
     contents,
     config: {
       systemInstruction: systemPrompt,
@@ -92,8 +92,8 @@ export async function streamChat(
 }
 
 /**
- * Check if a user has exceeded their token cap.
+ * Check if a user has exceeded their request cap.
  */
-export function isOverTokenCap(tokensUsed: number, tokenCap: number): boolean {
-  return tokensUsed >= tokenCap;
+export function isOverRequestCap(requestsUsedToday: number, requestCap: number): boolean {
+  return requestsUsedToday >= requestCap;
 }

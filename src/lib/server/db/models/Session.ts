@@ -32,5 +32,4 @@ const SessionSchema = new Schema<ISessionDocument>(
 );
 
 export const Session: Model<ISessionDocument> =
-  mongoose.models.Session ||
-  mongoose.model<ISessionDocument>("Session", SessionSchema);
+  mongoose.models.Session || mongoose.model<ISessionDocument>("Session", SessionSchema);
