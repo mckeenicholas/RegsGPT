@@ -1,39 +1,75 @@
-import mongoose, { Schema, Document, Model, Types } from "mongoose";
+import { getDB } from "../connection";
 
-export interface IMessage {
-  conversationId: Types.ObjectId;
-  role: "user" | "assistant";
+export type MessageRole = "user" | "assistant";
+
+export interface Message {
+  id: number;
+  conversationId: number;
+  role: MessageRole;
   content: string;
   tokensUsed: number;
   createdAt: Date;
 }
 
-export interface IMessageDocument extends IMessage, Document {}
+interface MessageRow {
+  id: number;
+  conversation_id: number;
+  role: MessageRole;
+  content: string;
+  tokens_used: number;
+  created_at: number;
+}
 
-const MessageSchema = new Schema<IMessageDocument>(
-  {
-    conversationId: {
-      type: Schema.Types.ObjectId,
-      ref: "Conversation",
-      required: true,
-      index: true,
-    },
-    role: { type: String, enum: ["user", "assistant"], required: true },
-    content: { type: String, required: true },
-    tokensUsed: { type: Number, default: 0 },
-  },
-  {
-    timestamps: { createdAt: true, updatedAt: false },
-    toJSON: {
-      transform(_doc, ret) {
-        ret.id = ret._id.toString();
-        delete ret._id;
-        delete ret.__v;
-        return ret;
-      },
-    },
-  },
-);
+function mapMessage(row: MessageRow): Message {
+  return {
+    id: row.id,
+    conversationId: row.conversation_id,
+    role: row.role,
+    content: row.content,
+    tokensUsed: row.tokens_used,
+    createdAt: new Date(row.created_at),
+  };
+}
 
-export const Message: Model<IMessageDocument> =
-  mongoose.models.Message || mongoose.model<IMessageDocument>("Message", MessageSchema);
+export function listByConversation(conversationId: number): Message[] {
+  const db = getDB();
+  const rows = db
+    .prepare(
+      `SELECT * FROM messages
+       WHERE conversation_id = ?
+       ORDER BY created_at ASC, id ASC`,
+    )
+    .all(conversationId) as unknown as MessageRow[];
+  return rows.map(mapMessage);
+}
+
+export function createMessage(input: {
+  conversationId: number;
+  role: MessageRole;
+  content: string;
+  tokensUsed?: number;
+}): Message {
+  const db = getDB();
+  const createdAt = Date.now();
+  const result = db
+    .prepare(
+      `INSERT INTO messages (
+         conversation_id, role, content, tokens_used, created_at
+       ) VALUES (?, ?, ?, ?, ?)`,
+    )
+    .run(
+      input.conversationId,
+      input.role,
+      input.content,
+      input.tokensUsed ?? 0,
+      createdAt,
+    );
+
+  const row = db
+    .prepare("SELECT * FROM messages WHERE id = ?")
+    .get(Number(result.lastInsertRowid)) as MessageRow | undefined;
+  if (!row) {
+    throw new Error("Failed to load message after insert");
+  }
+  return mapMessage(row);
+}

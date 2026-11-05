@@ -1,7 +1,14 @@
 import crypto from "crypto";
-import { connectDB } from "../db/connection";
-import { Session } from "../db/models/Session";
-import { User, type IUserDocument } from "../db/models/User";
+import { findOrCreateUser as upsertUser, type User } from "../db/models/User";
+import {
+  createSession as insertSession,
+  deleteAllUserSessions as removeAllUserSessions,
+  deleteExpiredSessions,
+  deleteSession as removeSession,
+  findSessionWithUser,
+  getSessionByToken,
+  updateWCATokens,
+} from "../db/models/Session";
 
 const SESSION_DURATION_DAYS = 30;
 
@@ -43,8 +50,11 @@ interface WCAUserResponseInfo {
 /**
  * Exchange an authorization code for WCA OAuth tokens.
  */
-export async function exchangeWCACode(accessCode: string): Promise<WCAOauthResponse> {
-  const { WCA_URL, APPLICATION_ID, APPLICATION_SECRET, REDIRECT_URI } = getWCAConfig();
+export async function exchangeWCACode(
+  accessCode: string,
+): Promise<WCAOauthResponse> {
+  const { WCA_URL, APPLICATION_ID, APPLICATION_SECRET, REDIRECT_URI } =
+    getWCAConfig();
 
   const response = await fetch(`${WCA_URL}/oauth/token`, {
     method: "POST",
@@ -60,7 +70,10 @@ export async function exchangeWCACode(accessCode: string): Promise<WCAOauthRespo
 
   if (!response.ok) {
     const text = await response.text();
-    console.error(`[WCA OAuth] Token exchange failed: ${response.status}`, text);
+    console.error(
+      `[WCA OAuth] Token exchange failed: ${response.status}`,
+      text,
+    );
     throw new Error(`WCA token exchange failed: ${response.status}`);
   }
 
@@ -70,7 +83,9 @@ export async function exchangeWCACode(accessCode: string): Promise<WCAOauthRespo
 /**
  * Refresh an expired WCA access token.
  */
-export async function refreshWCAToken(refreshToken: string): Promise<WCAOauthResponse> {
+export async function refreshWCAToken(
+  refreshToken: string,
+): Promise<WCAOauthResponse> {
   const { WCA_URL, APPLICATION_ID, APPLICATION_SECRET } = getWCAConfig();
 
   const response = await fetch(`${WCA_URL}/oauth/token`, {
@@ -94,7 +109,9 @@ export async function refreshWCAToken(refreshToken: string): Promise<WCAOauthRes
 /**
  * Fetch the authenticated user's info from the WCA API.
  */
-export async function fetchWCAUser(accessToken: string): Promise<WCAUserResponseInfo> {
+export async function fetchWCAUser(
+  accessToken: string,
+): Promise<WCAUserResponseInfo> {
   const { WCA_URL } = getWCAConfig();
 
   const response = await fetch(`${WCA_URL}/api/v0/me`, {
@@ -111,10 +128,10 @@ export async function fetchWCAUser(accessToken: string): Promise<WCAUserResponse
 /**
  * Get (and auto-refresh if expired) the WCA access token for a session.
  */
-export async function getWCAToken(sessionToken: string): Promise<string | null> {
-  await connectDB();
-
-  const session = await Session.findOne({ token: sessionToken });
+export async function getWCAToken(
+  sessionToken: string,
+): Promise<string | null> {
+  const session = getSessionByToken(sessionToken);
   if (!session) return null;
 
   const now = Date.now();
@@ -123,22 +140,21 @@ export async function getWCAToken(sessionToken: string): Promise<string | null> 
     // Token expired — refresh it
     try {
       const newTokens = await refreshWCAToken(session.wcaRefreshToken);
-      const newExpiry = new Date(newTokens.created_at * 1000 + newTokens.expires_in * 1000);
-
-      await Session.updateOne(
-        { _id: session._id },
-        {
-          wcaToken: newTokens.access_token,
-          wcaRefreshToken: newTokens.refresh_token,
-          wcaTokenExpiresAt: newExpiry,
-        },
+      const newExpiry = new Date(
+        newTokens.created_at * 1000 + newTokens.expires_in * 1000,
       );
+
+      updateWCATokens(session.id, {
+        wcaToken: newTokens.access_token,
+        wcaRefreshToken: newTokens.refresh_token,
+        wcaTokenExpiresAt: newExpiry,
+      });
 
       return newTokens.access_token;
     } catch (err) {
       console.error("[Auth] Failed to refresh WCA token:", err);
       // Delete the session if refresh fails (user needs to re-auth)
-      await Session.deleteOne({ _id: session._id });
+      removeSession(sessionToken);
       return null;
     }
   }
@@ -153,18 +169,16 @@ export async function getWCAToken(sessionToken: string): Promise<string | null> 
  * Stores WCA tokens alongside the session token.
  */
 export async function createSession(
-  userId: string,
+  userId: number,
   wcaToken: string,
   wcaRefreshToken: string,
   wcaTokenExpiresAt: Date,
 ): Promise<{ token: string; expiresAt: Date }> {
-  await connectDB();
-
   const token = crypto.randomBytes(32).toString("hex");
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + SESSION_DURATION_DAYS);
 
-  await Session.create({
+  insertSession({
     token,
     userId,
     wcaToken,
@@ -177,35 +191,30 @@ export async function createSession(
 }
 
 /**
- * Validate a session token. Returns the user document if valid, null otherwise.
+ * Validate a session token. Returns the user if valid, null otherwise.
  */
-export async function validateSession(token: string): Promise<IUserDocument | null> {
+export async function validateSession(token: string): Promise<User | null> {
   if (!token) return null;
-  await connectDB();
 
-  const session = await Session.findOne({
-    token,
-    expiresAt: { $gt: new Date() },
-  }).populate<{ userId: IUserDocument }>("userId");
+  // SQLite has no TTL index, so purge expired sessions opportunistically.
+  deleteExpiredSessions();
 
-  if (!session || !session.userId) return null;
-  return session.userId as unknown as IUserDocument;
+  const result = findSessionWithUser(token);
+  return result?.user ?? null;
 }
 
 /**
  * Delete a session (logout).
  */
 export async function deleteSession(token: string): Promise<void> {
-  await connectDB();
-  await Session.deleteOne({ token });
+  removeSession(token);
 }
 
 /**
  * Delete all sessions for a user.
  */
-export async function deleteAllUserSessions(userId: string): Promise<void> {
-  await connectDB();
-  await Session.deleteMany({ userId });
+export async function deleteAllUserSessions(userId: number): Promise<void> {
+  removeAllUserSessions(userId);
 }
 
 /**
@@ -213,14 +222,16 @@ export async function deleteAllUserSessions(userId: string): Promise<void> {
  */
 export function getTokenFromRequest(request: Request): string | null {
   const cookieHeader = request.headers.get("Cookie") || "";
-  const match = cookieHeader.match(/(?:^|;\s*)session_token=([^;]+)/u);
+  const match = cookieHeader.match(/(?:^|;\s*)session_token=([^;]+)/);
   return match ? match[1] : null;
 }
 
 /**
  * Full auth flow: extract token from request → validate → return user or null.
  */
-export async function authenticateRequest(request: Request): Promise<IUserDocument | null> {
+export async function authenticateRequest(
+  request: Request,
+): Promise<User | null> {
   const token = getTokenFromRequest(request);
   if (!token) return null;
   return validateSession(token);
@@ -233,19 +244,8 @@ export async function findOrCreateUser(wcaData: {
   wcaUserID: number;
   wcaID: string;
   name: string;
-}): Promise<IUserDocument> {
-  await connectDB();
-
-  const user = await User.findOneAndUpdate(
-    { wcaUserID: wcaData.wcaUserID },
-    {
-      $set: { name: wcaData.name, wcaID: wcaData.wcaID },
-      $setOnInsert: { requestsUsedToday: 0, lastRequestDate: "" },
-    },
-    { upsert: true, new: true, runValidators: true },
-  );
-
-  return user;
+}): Promise<User> {
+  return upsertUser(wcaData);
 }
 
 /**

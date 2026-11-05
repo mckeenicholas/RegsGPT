@@ -20,6 +20,9 @@ FROM node:25-alpine AS runtime
 
 WORKDIR /app
 
+# Persistent SQLite location
+RUN mkdir -p /app/data
+
 # Copy the build artifacts from the build stage
 COPY --from=build /app/.output ./.output
 

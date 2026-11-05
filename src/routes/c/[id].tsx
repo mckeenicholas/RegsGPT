@@ -1,10 +1,15 @@
+import {
+  RouteDefinition,
+  RouteSectionProps,
+  createAsync,
+} from "@solidjs/router";
 import { createSignal, createEffect } from "solid-js";
-import { RouteDefinition, RouteSectionProps, createAsync } from "@solidjs/router";
+import ChatWindow, { type ChatMessage } from "~/components/ChatWindow";
 import ChatInput from "~/components/ChatInput";
-import ChatWindow from "~/components/ChatWindow";
 import { getMessagesQuery } from "~/lib/server/services/conversations";
-import { getUserSession } from "~/lib/server/services/session";
 import { setSidebarOpen } from "~/routes/c";
+import { getUserSession } from "~/lib/server/services/session";
+import { streamChatRequest } from "~/lib/chatStream";
 
 export const route = {
   load: ({ params }) => {
@@ -16,10 +21,12 @@ export default function ExistingChat(props: RouteSectionProps) {
   const user = createAsync(() => getUserSession());
   const data = createAsync(() => getMessagesQuery(props.params.id as string));
 
-  const [localMessages, setLocalMessages] = createSignal<any[]>([]);
+  const [localMessages, setLocalMessages] = createSignal<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = createSignal(false);
   const [streamingContent, setStreamingContent] = createSignal("");
   const [pendingSuggestion, setPendingSuggestion] = createSignal("");
+
+  let nextLocalId = 1;
 
   createEffect(() => {
     // Sync the server pre-rendered messages into our local state
@@ -28,97 +35,54 @@ export default function ExistingChat(props: RouteSectionProps) {
     }
   });
 
-  const handleSend = async (message: string, isRetry = false) => {
+  const markFailed = (localId: number, failed: boolean) => {
+    setLocalMessages((prev) =>
+      prev.map((m) => (m.localId === localId ? { ...m, failed } : m)),
+    );
+  };
+
+  const send = async (message: string, localId: number) => {
     const convId = props.params.id;
     if (!convId) return;
 
-    if (isRetry) {
-      setLocalMessages((prev) => {
-        const next = [...prev];
-        if (next.length > 0 && next.at(-1).role === "assistant") {
-          next.pop();
-        }
-        return next;
-      });
-    } else {
-      setLocalMessages((prev) => [...prev, { role: "user", content: message }]);
-    }
     setIsStreaming(true);
     setStreamingContent("");
     setPendingSuggestion("");
 
     try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId: convId, message, isRetry }),
+      const result = await streamChatRequest(convId, message, {
+        onChunk: (fullText) => setStreamingContent(fullText),
       });
 
-      if (!res.ok || !res.body) {
-        throw new Error("Chat request failed");
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let fullResponse = "";
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (!jsonStr) continue;
-
-          try {
-            const event = JSON.parse(jsonStr);
-
-            if (event.type === "chunk") {
-              fullResponse += event.text;
-              setStreamingContent(fullResponse);
-            } else if (event.type === "done") {
-              setLocalMessages((prev) => [...prev, { role: "assistant", content: fullResponse }]);
-              setIsStreaming(false);
-              setStreamingContent("");
-            } else if (event.type === "error") {
-              console.error("Chat error:", event.message);
-              setLocalMessages((prev) => [
-                ...prev,
-                { role: "assistant", content: `⚠️ Error: ${event.message}` },
-              ]);
-              setIsStreaming(false);
-              setStreamingContent("");
-            }
-          } catch (parseErr) {
-            console.error("Parsing Error", parseErr);
-          }
-        }
-      }
+      setLocalMessages((prev) => [
+        ...prev.map((m) =>
+          m.localId === localId ? { ...m, failed: false } : m,
+        ),
+        { role: "assistant", content: result.content },
+      ]);
+      setIsStreaming(false);
+      setStreamingContent("");
     } catch (err) {
       console.error("Chat stream error:", err);
-      setLocalMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "⚠️ An error occurred while connecting to the AI.",
-        },
-      ]);
+      markFailed(localId, true);
       setIsStreaming(false);
       setStreamingContent("");
     }
   };
 
-  const handleRetry = () => {
-    const userMsgs = localMessages().filter((m) => m.role === "user");
-    if (userMsgs.length === 0) return;
-    const lastUserMsg = userMsgs.at(-1);
-    handleSend(lastUserMsg.content, true);
+  const handleSend = (message: string) => {
+    const localId = nextLocalId++;
+    setLocalMessages((prev) => [
+      ...prev,
+      { role: "user", content: message, localId },
+    ]);
+    void send(message, localId);
+  };
+
+  const handleRetry = (message: ChatMessage) => {
+    if (message.localId === undefined || isStreaming()) return;
+    markFailed(message.localId, false);
+    void send(message.content, message.localId);
   };
 
   return (
@@ -129,11 +93,15 @@ export default function ExistingChat(props: RouteSectionProps) {
         streamingContent={streamingContent()}
         conversationTitle={data()?.conversation.title || "RegsGPT Chat"}
         userName={user()?.name || "User"}
-        onSuggestionClick={(text) => handleSend(text)}
+        onSuggestionClick={handleSend}
         onToggleSidebar={() => setSidebarOpen((v) => !v)}
         onRetry={handleRetry}
       />
-      <ChatInput onSend={handleSend} disabled={isStreaming()} initialValue={pendingSuggestion()} />
+      <ChatInput
+        onSend={handleSend}
+        disabled={isStreaming()}
+        initialValue={pendingSuggestion()}
+      />
     </>
   );
 }

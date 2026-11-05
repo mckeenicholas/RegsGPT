@@ -4,27 +4,18 @@ services:
     container_name: regsgpt-app
     env_file:
       - .env
+    environment:
+      DATABASE_PATH: /app/data/regsgpt.db
     restart: unless-stopped
     ports:
       - "3000:3000"
-    depends_on:
-      - mongo
-    networks:
-      - regsgpt-net
-
-  mongo:
-    image: mongo:7
-    container_name: regsgpt-mongo
-    restart: unless-stopped
-    ports:
-      - "27017:27017"
     volumes:
-      - mongo_data:/data/db
+      - sqlite_data:/app/data
     networks:
       - regsgpt-net
 
 volumes:
-  mongo_data:
+  sqlite_data:
 
 networks:
   regsgpt-net:

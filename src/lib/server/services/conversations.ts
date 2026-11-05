@@ -1,9 +1,17 @@
-import { getRequestEvent } from "solid-js/web";
 import { query, action, redirect } from "@solidjs/router";
-import { connectDB } from "~/lib/server/db/connection";
-import { Conversation } from "~/lib/server/db/models/Conversation";
-import { Message } from "~/lib/server/db/models/Message";
+import { getRequestEvent } from "solid-js/web";
 import { authenticateRequest } from "~/lib/server/services/auth";
+import {
+  createConversation,
+  deleteConversation,
+  getForUser,
+  listByUser,
+} from "~/lib/server/db/models/Conversation";
+import { listByConversation } from "~/lib/server/db/models/Message";
+
+function isValidPublicId(id: string): boolean {
+  return typeof id === "string" && id.length > 0 && id.length <= 64;
+}
 
 export const getConversationsQuery = query(async () => {
   "use server";
@@ -15,14 +23,10 @@ export const getConversationsQuery = query(async () => {
     throw redirect("/");
   }
 
-  await connectDB();
-  const conversations = await Conversation.find({ userId: user._id })
-    .sort({ updatedAt: -1 })
-    .select("title createdAt updatedAt")
-    .lean();
+  const conversations = listByUser(user.id);
 
-  return conversations.map((c: any) => ({
-    id: c._id.toString(),
+  return conversations.map((c) => ({
+    id: c.id,
     title: c.title,
     createdAt: c.createdAt.toISOString(),
     updatedAt: c.updatedAt.toISOString(),
@@ -39,24 +43,24 @@ export const getMessagesQuery = query(async (id: string) => {
     throw redirect("/");
   }
 
-  await connectDB();
-  const conversation = await Conversation.findOne({
-    _id: id,
-    userId: user._id,
-  }).lean();
+  if (!isValidPublicId(id)) {
+    throw redirect("/c");
+  }
+
+  const conversation = getForUser(id, user.id);
   if (!conversation) {
     throw redirect("/c");
   }
 
-  const messages = await Message.find({ conversationId: id }).sort({ createdAt: 1 }).lean();
+  const messages = listByConversation(conversation.internalId);
 
   return {
     conversation: {
-      id: conversation._id.toString(),
+      id: conversation.id,
       title: conversation.title,
     },
-    messages: messages.map((m: any) => ({
-      id: m._id.toString(),
+    messages: messages.map((m) => ({
+      id: String(m.id),
       role: m.role,
       content: m.content,
       tokensUsed: m.tokensUsed,
@@ -75,13 +79,9 @@ export const createConversationAction = action(async () => {
     throw redirect("/");
   }
 
-  await connectDB();
-  const conversation = await Conversation.create({
-    userId: user._id,
-    title: "New Chat",
-  });
+  const conversation = createConversation(user.id);
 
-  throw redirect(`/c/${conversation._id.toString()}`);
+  throw redirect(`/c/${conversation.id}`);
 }, "createConversation");
 
 export async function createConversationRPC() {
@@ -94,13 +94,9 @@ export async function createConversationRPC() {
     throw new Error("Unauthenticated");
   }
 
-  await connectDB();
-  const conversation = await Conversation.create({
-    userId: user._id,
-    title: "New Chat",
-  });
+  const conversation = createConversation(user.id);
 
-  return { id: conversation._id.toString() };
+  return { id: conversation.id };
 }
 
 export const deleteConversationAction = action(async (id: string) => {
@@ -113,15 +109,13 @@ export const deleteConversationAction = action(async (id: string) => {
     throw redirect("/");
   }
 
-  await connectDB();
-  const conversation = await Conversation.findOne({
-    _id: id,
-    userId: user._id,
-  });
-  if (!conversation) return { success: false, error: "Not found" };
+  if (!isValidPublicId(id)) {
+    return { success: false, error: "Not found" };
+  }
 
-  await Message.deleteMany({ conversationId: id });
-  await Conversation.deleteOne({ _id: id });
+  // Messages are removed by the foreign-key cascade.
+  const deleted = deleteConversation(id, user.id);
+  if (!deleted) return { success: false, error: "Not found" };
 
   return { success: true };
 }, "deleteConversation");

@@ -12,6 +12,12 @@ app.config.timestamp_*.js
 .env.development
 .env.production
 
+# SQLite
+/data
+*.db
+*.db-shm
+*.db-wal
+
 # dependencies
 /node_modules
 

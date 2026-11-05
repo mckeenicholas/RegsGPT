@@ -1,9 +1,8 @@
 import type { APIEvent } from "@solidjs/start/server";
-import { connectDB } from "~/lib/server/db/connection";
-import { Conversation } from "~/lib/server/db/models/Conversation";
-import { Message } from "~/lib/server/db/models/Message";
-import { User } from "~/lib/server/db/models/User";
 import { authenticateRequest } from "~/lib/server/services/auth";
+import { getForUser, setTitle, touch } from "~/lib/server/db/models/Conversation";
+import { createMessage, listByConversation } from "~/lib/server/db/models/Message";
+import { recordRequest } from "~/lib/server/db/models/User";
 import { streamChat, isOverRequestCap, type ChatMessage } from "~/lib/server/services/gemini";
 
 /**
@@ -38,7 +37,7 @@ export async function POST(event: APIEvent) {
 
     if (isOverRequestCap(requestsUsed, requestCap)) {
       return new Response(
-        `data: ${JSON.stringify({ type: "error", message: "Daily request limit reached (50 requests per day)." })}\n\n`,
+        `data: ${JSON.stringify({ type: "error", message: `Daily request limit reached (${requestCap} requests per day).` })}\n\n`,
         {
           status: 429,
           headers: { "Content-Type": "text/event-stream" },
@@ -47,9 +46,14 @@ export async function POST(event: APIEvent) {
     }
 
     const body = await event.request.json();
-    const { conversationId, message, isRetry } = body;
+    const { conversationId, message } = body;
 
-    if (!conversationId || !message?.trim()) {
+    if (
+      typeof conversationId !== "string" ||
+      conversationId.length === 0 ||
+      conversationId.length > 64 ||
+      !message?.trim()
+    ) {
       return new Response(
         `data: ${JSON.stringify({ type: "error", message: "Missing conversationId or message" })}\n\n`,
         {
@@ -59,13 +63,8 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    await connectDB();
-
     // Verify conversation ownership
-    const conversation = await Conversation.findOne({
-      _id: conversationId,
-      userId: user._id,
-    });
+    const conversation = getForUser(conversationId, user.id);
 
     if (!conversation) {
       return new Response(
@@ -77,23 +76,28 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    // Save the user message immediately if not a retry
-    if (!isRetry) {
-      await Message.create({
-        conversationId,
-        role: "user",
-        content: message.trim(),
-        tokensUsed: 0,
-      });
-    }
+    // Load the existing history first. If the last message is the same user
+    // message (e.g. a retry after a failed stream), reuse it instead of saving
+    // a duplicate.
+    const existingMessages = listByConversation(conversation.internalId);
+    const lastMessage = existingMessages[existingMessages.length - 1];
 
-    // Load conversation history
-    const previousMessages = await Message.find({ conversationId }).sort({ createdAt: 1 }).lean();
+    const userMessage =
+      lastMessage?.role === "user" && lastMessage.content === message.trim()
+        ? lastMessage
+        : createMessage({
+            conversationId: conversation.internalId,
+            role: "user",
+            content: message.trim(),
+            tokensUsed: 0,
+          });
+
+    // Exclude the current user message from the history sent to the model.
+    const previousMessages = existingMessages.filter((m) => m.id !== userMessage.id);
 
     const history: ChatMessage[] = previousMessages
-      .filter((m: any) => m.role !== "user" || m.content !== message.trim()) // exclude the just-added message
       .slice(-20) // keep last 20 messages for context window
-      .map((m: any) => ({
+      .map((m) => ({
         role: m.role === "user" ? ("user" as const) : ("model" as const),
         text: m.content,
       }));
@@ -116,28 +120,23 @@ export async function POST(event: APIEvent) {
           const usage = await getUsage();
 
           // Save the assistant response
-          await Message.create({
-            conversationId,
+          createMessage({
+            conversationId: conversation.internalId,
             role: "assistant",
             content: fullResponse,
             tokensUsed: usage.totalTokens,
           });
 
           // Update user request count
-          if (user.lastRequestDate === today) {
-            await User.updateOne({ _id: user._id }, { $inc: { requestsUsedToday: 1 } });
-          } else {
-            await User.updateOne(
-              { _id: user._id },
-              { $set: { requestsUsedToday: 1, lastRequestDate: today } },
-            );
-          }
+          recordRequest(user.id, today);
 
           // Auto-generate conversation title from first user message
           if (conversation.title === "New Chat") {
             const title =
               message.trim().length > 50 ? message.trim().slice(0, 50) + "..." : message.trim();
-            await Conversation.updateOne({ _id: conversationId }, { title });
+            setTitle(conversation.internalId, title);
+          } else {
+            touch(conversation.internalId);
           }
 
           // Send done event

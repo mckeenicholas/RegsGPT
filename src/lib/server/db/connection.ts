@@ -1,28 +1,59 @@
-import mongoose from "mongoose";
+import { mkdirSync } from "node:fs";
+import { dirname, isAbsolute, resolve } from "node:path";
+import { DatabaseSync } from "node:sqlite";
+import { migrate } from "./schema";
 
-let cached = (global as any).__mongooseConnection as
-  | { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null }
-  | undefined;
+type DBCache = { db: DatabaseSync | null };
 
-if (!cached) {
-  cached = (global as any).__mongooseConnection = { conn: null, promise: null };
+const globalCache = globalThis as typeof globalThis & {
+  __regsgptDB?: DBCache;
+};
+
+if (!globalCache.__regsgptDB) {
+  globalCache.__regsgptDB = { db: null };
 }
 
-export async function connectDB(): Promise<typeof mongoose> {
-  if (cached!.conn) return cached!.conn;
-
-  const uri = process.env.MONGODB_URI;
-  if (!uri) {
-    throw new Error("MONGODB_URI environment variable is not set");
+function resolveDatabasePath(): string {
+  const configured = process.env.DATABASE_PATH;
+  if (configured) {
+    return isAbsolute(configured)
+      ? configured
+      : resolve(process.cwd(), configured);
   }
+  return resolve(process.cwd(), "data", "regsgpt.db");
+}
 
-  if (!cached!.promise) {
-    cached!.promise = mongoose.connect(uri).then((m) => {
-      console.log("[MongoDB] Connected successfully");
-      return m;
-    });
-  }
+/**
+ * Returns the process-wide SQLite connection, opening it (and applying
+ * migrations) on first use. The connection is cached on `globalThis` so that
+ * dev-server hot reloads do not leak file handles.
+ */
+export function getDB(): DatabaseSync {
+  const cached = globalCache.__regsgptDB!;
+  if (cached.db) return cached.db;
 
-  cached!.conn = await cached!.promise;
-  return cached!.conn;
+  const path = resolveDatabasePath();
+  mkdirSync(dirname(path), { recursive: true });
+
+  const db = new DatabaseSync(path);
+  db.exec("PRAGMA journal_mode = WAL;");
+  db.exec("PRAGMA foreign_keys = ON;");
+  db.exec("PRAGMA busy_timeout = 5000;");
+
+  migrate(db);
+  cached.db = db;
+
+  console.log(`[SQLite] Connected: ${path}`);
+  return db;
+}
+
+/**
+ * Closes the cached connection. Used by standalone scripts so the process can
+ * exit cleanly.
+ */
+export function closeDB(): void {
+  const cached = globalCache.__regsgptDB!;
+  if (!cached.db) return;
+  cached.db.close();
+  cached.db = null;
 }

@@ -1,7 +1,6 @@
 import { readFileSync } from "fs";
 import { join } from "path";
-import { connectDB } from "../db/connection";
-import { Incident } from "../db/models/Incident";
+import { listAll as listIncidents } from "../db/models/Incident";
 
 let cachedSystemPrompt: string | null = null;
 
@@ -56,8 +55,7 @@ export async function getSystemPrompt(): Promise<string> {
   // Load incidents from DB
   let incidentText: string;
   try {
-    await connectDB();
-    const incidents = await Incident.find({}).sort({ incidentId: -1 }).lean();
+    const incidents = listIncidents();
     incidentText = formatIncidents(incidents);
   } catch (err) {
     console.warn("[Documents] Failed to load incidents from DB, using empty:", err);

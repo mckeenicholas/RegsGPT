@@ -27,7 +27,7 @@ export const getUserSession = query(async () => {
     const requestCap = Number(process.env.REQUEST_CAP) || 50;
 
     return {
-      id: user._id.toString(),
+      id: String(user.id),
       wcaUserID: user.wcaUserID,
       wcaID: user.wcaID,
       name: user.name,

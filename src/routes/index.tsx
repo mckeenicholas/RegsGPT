@@ -1,5 +1,5 @@
-import { Show, createEffect } from "solid-js";
 import { createAsync, useNavigate } from "@solidjs/router";
+import { Show, createEffect } from "solid-js";
 import LoginPage from "~/components/LoginPage";
 import { getUserSession } from "~/lib/server/services/session";
 
@@ -15,7 +15,7 @@ export default function Home() {
 
   return (
     <Show when={user()} fallback={<LoginPage />}>
-      <div class="flex h-dvh w-full items-center justify-center bg-bg-primary text-text-primary">
+      <div class="h-dvh w-full flex items-center justify-center bg-bg-primary text-text-primary">
         Loading RegsGPT...
       </div>
     </Show>

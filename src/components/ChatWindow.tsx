@@ -26,7 +26,13 @@ interface Message {
   id?: string;
   role: "user" | "assistant";
   content: string;
+  /** Client-side marker set when a request failed and can be retried. */
+  failed?: boolean;
+  /** Client-side identity used to update/retry a specific message. */
+  localId?: number;
 }
+
+export type ChatMessage = Message;
 
 interface ChatWindowProps {
   messages: Message[];
@@ -36,7 +42,7 @@ interface ChatWindowProps {
   onSuggestionClick: (text: string) => void;
   onToggleSidebar: () => void;
   userName: string;
-  onRetry?: () => void;
+  onRetry?: (message: Message) => void;
 }
 
 const ChatWindow: Component<ChatWindowProps> = (props) => {
@@ -112,17 +118,18 @@ const ChatWindow: Component<ChatWindowProps> = (props) => {
                       <SolidMarkdown children={substituteLinks(msg.content)} />
                     </Show>
 
-                    <Show
-                      when={
-                        msg.role === "assistant" && msg.content.startsWith("⚠️") && props.onRetry
-                      }
-                    >
-                      <button
-                        onClick={() => props.onRetry!()}
-                        class="mt-2.5 flex cursor-pointer items-center gap-1.5 rounded-lg border border-accent/30 bg-accent/10 px-3.5 py-1.5 text-xs font-semibold text-accent transition-all hover:border-accent/40 hover:bg-accent/20"
-                      >
-                        ↻ Retry
-                      </button>
+                    <Show when={msg.failed}>
+                      <div class="mt-2.5 flex items-center gap-3">
+                        <span class="text-xs text-red-400">⚠ Failed to get a response.</span>
+                        <button
+                          type="button"
+                          onClick={() => props.onRetry?.(msg)}
+                          disabled={props.isStreaming}
+                          class="flex cursor-pointer items-center gap-1.5 rounded-lg border border-accent/30 bg-accent/10 px-3.5 py-1.5 text-xs font-semibold text-accent transition-all hover:border-accent/40 hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          ↻ Retry
+                        </button>
+                      </div>
                     </Show>
                   </div>
                 </div>
