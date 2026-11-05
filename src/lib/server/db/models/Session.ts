@@ -89,18 +89,16 @@ export function createSession(input: {
 
   const session = getSessionByToken(input.token);
   if (!session) {
-    throw new Error(
-      `Failed to load session ${String(result.lastInsertRowid)} after insert`,
-    );
+    throw new Error(`Failed to load session ${String(result.lastInsertRowid)} after insert`);
   }
   return session;
 }
 
 export function getSessionByToken(token: string): SessionRecord | null {
   const db = getDB();
-  const row = db
-    .prepare("SELECT * FROM sessions WHERE token = ?")
-    .get(token) as SessionRow | undefined;
+  const row = db.prepare("SELECT * FROM sessions WHERE token = ?").get(token) as
+    | SessionRow
+    | undefined;
   return row ? mapSession(row) : null;
 }
 
@@ -133,7 +131,9 @@ export function findSessionWithUser(token: string): SessionWithUser | null {
     )
     .get(token, Date.now()) as SessionUserJoinRow | undefined;
 
-  if (!row) return null;
+  if (!row) {
+    return null;
+  }
 
   const session = mapSession({
     id: row.s_id,
@@ -172,12 +172,7 @@ export function updateWCATokens(
     `UPDATE sessions
        SET wca_token = ?, wca_refresh_token = ?, wca_token_expires_at = ?
      WHERE id = ?`,
-  ).run(
-    tokens.wcaToken,
-    tokens.wcaRefreshToken,
-    tokens.wcaTokenExpiresAt.getTime(),
-    sessionId,
-  );
+  ).run(tokens.wcaToken, tokens.wcaRefreshToken, tokens.wcaTokenExpiresAt.getTime(), sessionId);
 }
 
 export function deleteSession(token: string): void {

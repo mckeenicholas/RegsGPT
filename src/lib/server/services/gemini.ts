@@ -4,7 +4,9 @@ import { getSystemPrompt } from "./documents";
 let aiClient: GoogleGenAI | null = null;
 
 function getClient(): GoogleGenAI {
-  if (aiClient) return aiClient;
+  if (aiClient) {
+    return aiClient;
+  }
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY environment variable is not set");
@@ -68,13 +70,13 @@ export async function streamChat(
   async function* textStream(): AsyncIterable<string> {
     try {
       for await (const chunk of response) {
-        const text = chunk.text;
+        const { text } = chunk;
         if (text) {
           yield text;
         }
         // Track usage from the last chunk
         if (chunk.usageMetadata) {
-          totalTokens = chunk.usageMetadata.totalTokenCount || 0;
+          totalTokens = chunk.usageMetadata.totalTokenCount ?? 0;
         }
       }
     } finally {

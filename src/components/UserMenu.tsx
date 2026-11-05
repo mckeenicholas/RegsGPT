@@ -1,4 +1,4 @@
-import { Component } from "solid-js";
+import type { Component } from "solid-js";
 
 interface UserMenuProps {
   name: string;
@@ -30,7 +30,9 @@ const UserMenu: Component<UserMenuProps> = (props) => {
       </div>
       <button
         class="rounded p-1.5 text-base text-text-muted transition-colors hover:bg-danger/10 hover:text-danger"
-        onClick={() => props.onLogout()}
+        onClick={() => {
+          props.onLogout();
+        }}
         title="Sign out"
         id="logout-button"
       >

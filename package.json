@@ -4,7 +4,6 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "start": "vite start",
     "preview": "vite preview",
     "fetch-incidents": "bun run scripts/fetch-incidents.ts"
   },
@@ -20,6 +19,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.4",
+    "eslint-plugin-solid": "^0.18.1",
     "tailwindcss": "^4.3.4"
   },
   "engines": {

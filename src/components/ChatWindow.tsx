@@ -1,4 +1,4 @@
-import { Component, For, Show, createEffect } from "solid-js";
+import { For, Show, createEffect, on, type Component } from "solid-js";
 import { SolidMarkdown } from "solid-markdown";
 
 const WCA_BASE = "https://www.worldcubeassociation.org";
@@ -54,13 +54,23 @@ const ChatWindow: Component<ChatWindowProps> = (props) => {
     }, 10);
   };
 
-  createEffect(() => {
-    props.messages.length;
-    props.streamingContent;
-    scrollToBottom();
-  });
+  createEffect(
+    on(
+      () => [props.messages.length, props.streamingContent],
+      () => {
+        scrollToBottom();
+      },
+    ),
+  );
 
   const hasMessages = () => props.messages.length > 0 || props.isStreaming;
+
+  const avatarLabel = (message: Message): string => {
+    if (message.role !== "user") {
+      return "R";
+    }
+    return props.userName ? props.userName[0].toUpperCase() : "U";
+  };
 
   return (
     <div class="relative flex h-full min-h-0 min-w-0 flex-1 flex-col">
@@ -68,13 +78,15 @@ const ChatWindow: Component<ChatWindowProps> = (props) => {
       <div class="flex min-h-13 items-center gap-3 border-b border-border/50 bg-bg-primary px-5 py-3">
         <button
           class="hidden cursor-pointer rounded border-none bg-transparent p-1.5 text-xl text-text-secondary max-md:block"
-          onClick={() => props.onToggleSidebar()}
+          onClick={() => {
+            props.onToggleSidebar();
+          }}
           id="mobile-menu-button"
         >
           ☰
         </button>
         <div class="truncate text-sm font-medium text-text-primary">
-          {props.conversationTitle || "RegsGPT"}
+          {props.conversationTitle ?? "RegsGPT"}
         </div>
       </div>
 
@@ -103,11 +115,7 @@ const ChatWindow: Component<ChatWindowProps> = (props) => {
                           : "bg-linear-to-br from-accent to-accent-dim text-bg-primary"
                       }`}
                     >
-                      {msg.role === "user"
-                        ? props.userName
-                          ? props.userName[0].toUpperCase()
-                          : "U"
-                        : "R"}
+                      {avatarLabel(msg)}
                     </div>
                     <span class="text-sm font-semibold text-text-secondary">
                       {msg.role === "user" ? "You" : "RegsGPT"}
@@ -162,7 +170,11 @@ const ChatWindow: Component<ChatWindowProps> = (props) => {
               </div>
             </Show>
 
-            <div ref={messagesEndRef} />
+            <div
+              ref={(el) => {
+                messagesEndRef = el;
+              }}
+            />
           </div>
         </div>
       </Show>

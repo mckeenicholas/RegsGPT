@@ -8,10 +8,7 @@
  */
 import "dotenv/config";
 import { closeDB, getDB } from "../src/lib/server/db/connection";
-import {
-  upsertMany,
-  type IncidentInput,
-} from "../src/lib/server/db/models/Incident";
+import { upsertMany, type IncidentInput } from "../src/lib/server/db/models/Incident";
 
 const WCA_API_URL = "https://www.worldcubeassociation.org/api/v0/incidents";
 const PER_PAGE = 1000;
@@ -24,32 +21,28 @@ interface WCAIncident {
   updated_at: string;
   resolved_at: string | null;
   url: string;
-  tags: Array<{
+  tags: {
     name: string;
     class: string;
     id: string;
     content_html: string;
     url: string;
-  }>;
-  competitions: Array<{
+  }[];
+  competitions: {
     id: string;
     name: string;
     comments: string;
-  }>;
+  }[];
   // We intentionally skip private_description, digest_worthy, digest_sent_at
 }
 
 async function fetchIncidents(): Promise<WCAIncident[]> {
-  console.log(
-    `[Fetch] Fetching incidents from ${WCA_API_URL}?per_page=${PER_PAGE}`,
-  );
+  console.log(`[Fetch] Fetching incidents from ${WCA_API_URL}?per_page=${PER_PAGE}`);
 
   const response = await fetch(`${WCA_API_URL}?per_page=${PER_PAGE}`);
 
   if (!response.ok) {
-    throw new Error(
-      `Failed to fetch incidents: ${response.status} ${response.statusText}`,
-    );
+    throw new Error(`Failed to fetch incidents: ${response.status} ${response.statusText}`);
   }
 
   const data: WCAIncident[] = await response.json();
@@ -87,7 +80,7 @@ async function main() {
 
   try {
     const incidents = await fetchIncidents();
-    const result = upsertMany(incidents.map(toIncidentInput));
+    const result = upsertMany(incidents.map((incident) => toIncidentInput(incident)));
     console.log(
       `[DB] Upserted incidents: ${result.created} created, ${result.updated} updated, ${result.unchanged} unchanged`,
     );
@@ -98,7 +91,9 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error("Fatal error:", err);
+try {
+  await main();
+} catch (error) {
+  console.error("Fatal error:", error);
   process.exit(1);
-});
+}

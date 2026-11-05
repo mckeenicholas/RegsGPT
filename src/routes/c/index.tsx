@@ -1,11 +1,11 @@
 import { createSignal } from "solid-js";
 import { createAsync } from "@solidjs/router";
-import ChatWindow, { type ChatMessage } from "~/components/ChatWindow";
 import ChatInput from "~/components/ChatInput";
+import ChatWindow, { type ChatMessage } from "~/components/ChatWindow";
+import { streamChatRequest } from "~/lib/chatStream";
 import { createConversationRPC } from "~/lib/server/services/conversations";
 import { getUserSession } from "~/lib/server/services/session";
 import { setSidebarOpen } from "~/routes/c";
-import { streamChatRequest } from "~/lib/chatStream";
 
 export default function NewChat() {
   const user = createAsync(() => getUserSession());
@@ -17,9 +17,7 @@ export default function NewChat() {
   let nextLocalId = 1;
 
   const markFailed = (localId: number, failed: boolean) => {
-    setMessages((prev) =>
-      prev.map((m) => (m.localId === localId ? { ...m, failed } : m)),
-    );
+    setMessages((prev) => prev.map((m) => (m.localId === localId ? { ...m, failed } : m)));
   };
 
   const send = async (message: string, localId: number) => {
@@ -38,7 +36,7 @@ export default function NewChat() {
         setConversationId(convId);
 
         // Swap the URL immediately using history so we don't drop the SSE stream state
-        window.history.replaceState({}, "", `/c/${convId}`);
+        globalThis.history.replaceState({}, "", `/c/${convId}`);
       }
 
       await streamChatRequest(convId, message, {
@@ -46,9 +44,9 @@ export default function NewChat() {
       });
 
       // Load the persisted conversation state from the server.
-      window.location.href = `/c/${convId}`;
-    } catch (e) {
-      console.error(e);
+      globalThis.location.href = `/c/${convId}`;
+    } catch (error) {
+      console.error(error);
       markFailed(localId, true);
       setIsStreaming(false);
       setStreamingContent("");
@@ -57,15 +55,14 @@ export default function NewChat() {
 
   const handleSend = (message: string) => {
     const localId = nextLocalId++;
-    setMessages((prev) => [
-      ...prev,
-      { role: "user", content: message, localId },
-    ]);
+    setMessages((prev) => [...prev, { role: "user", content: message, localId }]);
     void send(message, localId);
   };
 
   const handleRetry = (message: ChatMessage) => {
-    if (message.localId === undefined || isStreaming()) return;
+    if (message.localId === undefined || isStreaming()) {
+      return;
+    }
     markFailed(message.localId, false);
     void send(message.content, message.localId);
   };
@@ -80,7 +77,7 @@ export default function NewChat() {
         onSuggestionClick={handleSend}
         onToggleSidebar={() => setSidebarOpen((v) => !v)}
         onRetry={handleRetry}
-        userName={user()?.name || "User"}
+        userName={user()?.name ?? "User"}
       />
       <ChatInput onSend={handleSend} disabled={isStreaming()} />
     </>

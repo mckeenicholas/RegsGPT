@@ -40,7 +40,7 @@ export function listByConversation(conversationId: number): Message[] {
        ORDER BY created_at ASC, id ASC`,
     )
     .all(conversationId) as unknown as MessageRow[];
-  return rows.map(mapMessage);
+  return rows.map((row) => mapMessage(row));
 }
 
 export function createMessage(input: {
@@ -57,13 +57,7 @@ export function createMessage(input: {
          conversation_id, role, content, tokens_used, created_at
        ) VALUES (?, ?, ?, ?, ?)`,
     )
-    .run(
-      input.conversationId,
-      input.role,
-      input.content,
-      input.tokensUsed ?? 0,
-      createdAt,
-    );
+    .run(input.conversationId, input.role, input.content, input.tokensUsed ?? 0, createdAt);
 
   const row = db
     .prepare("SELECT * FROM messages WHERE id = ?")

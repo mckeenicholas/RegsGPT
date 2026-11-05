@@ -6,22 +6,24 @@ let cachedSystemPrompt: string | null = null;
 
 function loadFile(filename: string): string {
   const dataDir = join(process.cwd(), "src", "lib", "server", "data");
-  return readFileSync(join(dataDir, filename), "utf-8");
+  return readFileSync(join(dataDir, filename), "utf8");
 }
 
 /**
  * Format incidents into a compact text representation for the LLM context.
  */
 function formatIncidents(
-  incidents: Array<{
+  incidents: {
     incidentId: number;
     title: string;
     public_summary: string;
-    tags: Array<{ name: string; id: string }>;
-    competitions: Array<{ name: string }>;
-  }>,
+    tags: { name: string; id: string }[];
+    competitions: { name: string }[];
+  }[],
 ): string {
-  if (incidents.length === 0) return "No incidents available.";
+  if (incidents.length === 0) {
+    return "No incidents available.";
+  }
 
   return incidents
     .map((inc) => {
@@ -46,7 +48,9 @@ function formatIncidents(
  * and incidents from the database.
  */
 export async function getSystemPrompt(): Promise<string> {
-  if (cachedSystemPrompt) return cachedSystemPrompt;
+  if (cachedSystemPrompt) {
+    return cachedSystemPrompt;
+  }
 
   // Load static files
   const promptTemplate = loadFile("prompt.txt");
@@ -57,8 +61,8 @@ export async function getSystemPrompt(): Promise<string> {
   try {
     const incidents = listIncidents();
     incidentText = formatIncidents(incidents);
-  } catch (err) {
-    console.warn("[Documents] Failed to load incidents from DB, using empty:", err);
+  } catch (error) {
+    console.warn("[Documents] Failed to load incidents from DB, using empty:", error);
     incidentText = "Incident log is not available.";
   }
 

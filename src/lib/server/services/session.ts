@@ -22,7 +22,7 @@ export const getUserSession = query(async () => {
       return null;
     }
 
-    const today = new Date().toISOString().split("T")[0];
+    const [today] = new Date().toISOString().split("T");
     const requestsUsed = user.lastRequestDate === today ? user.requestsUsedToday : 0;
     const requestCap = Number(process.env.REQUEST_CAP) || 50;
 
@@ -58,7 +58,9 @@ export const logoutAction = action(async () => {
     appendResponseHeader("Set-Cookie", "session_token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0");
   } catch (error) {
     console.error("[Auth Session logoutAction] Error:", error);
-    if (error instanceof Error) throw error;
+    if (error instanceof Error) {
+      throw error;
+    }
     throw new Error("Internal server error", { cause: error });
   }
 

@@ -1,15 +1,89 @@
 {
   "ignorePatterns": ["node_modules", ".nitro", ".output", "dist"],
+  "options": {
+    "typeAware": true
+  },
   "categories": {
     "correctness": "error",
     "suspicious": "warn",
     "pedantic": "warn",
-    "perf": "warn"
+    "perf": "warn",
+    "style": "warn"
   },
+  "jsPlugins": [
+    {
+      "name": "solid",
+      "specifier": "eslint-plugin-solid"
+    }
+  ],
   "rules": {
     "max-lines-per-function": "off",
     "max-lines": "off",
     "require-await": "off",
-    "no-inline-comments": "off"
+    "typescript-eslint/require-await": "off",
+    "func-style": "off",
+    "no-inline-comments": "off",
+    "solid/components-return-once": "warn",
+    "solid/event-handlers": "warn",
+    "solid/imports": "warn",
+    "solid/jsx-no-duplicate-props": "error",
+    "solid/jsx-no-script-url": "error",
+    "solid/jsx-no-undef": [
+      "error",
+      {
+        "typescriptEnabled": true
+      }
+    ],
+    "solid/jsx-uses-vars": "error",
+    "solid/no-accessor-as-prop": "warn",
+    "solid/no-array-handlers": "warn",
+    "solid/no-browser-globals-in-server-function": "warn",
+    "solid/no-destructure": "error",
+    "solid/no-innerhtml": "error",
+    "solid/no-invalid-server-capture": "warn",
+    "solid/no-module-scope-reactive-primitive": "warn",
+    "solid/no-proxy-apis": "warn",
+    "solid/no-react-deps": "warn",
+    "solid/no-react-specific-props": "warn",
+    "solid/no-restated-default-options": "warn",
+    "solid/no-single-arg-create-effect": "off",
+    "solid/no-unknown-namespaces": "warn",
+    "solid/prefer-classlist": "off",
+    "solid/prefer-for": "error",
+    "solid/prefer-onSettled-for-side-effects": "warn",
+    "solid/prefer-show": "warn",
+    "solid/prefer-structured-class": "off",
+    "solid/reactivity": "warn",
+    "solid/removed-api": "off",
+    "solid/require-async-server-function": "warn",
+    "solid/self-closing-comp": "warn",
+    "solid/style-prop": "warn",
+    "solid/valid-use-server": "warn",
+    "typescript/prefer-readonly-parameter-types": "off",
+    "typescript/strict-void-return": "off",
+    "typescript/no-misused-promises": "off",
+    "typescript/no-unsafe-assignment": "off",
+    "typescript/strict-boolean-expressions": "off",
+    "typescript/no-unsafe-type-assertion": "off",
+    "typescript/no-unsafe-call": "off",
+    "typescript/no-unsafe-member-access": "off",
+    "typescript/no-unsafe-argument": "off",
+    "typescript/no-unsafe-return": "off",
+    "typescript-eslint/no-confusing-void-expression": "off",
+    "only-throw-error": "off",
+    "filename-case": "off",
+    "no-ternary": "off",
+    "no-magic-numbers": "off",
+    "id-length": "off",
+    "sort-imports": "off",
+    "max-statements": "off",
+    "no-null": "off",
+    "max-params": "off",
+    "no-continue": "off",
+    "prefer-named-capture-group": "off",
+    "init-declarations": "off",
+    "one-var": "off",
+    "capitalized-comments": "off",
+    "sort-keys": "off"
   }
 }

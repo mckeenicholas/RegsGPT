@@ -74,11 +74,12 @@ CREATE TABLE IF NOT EXISTS incidents (
  * Applies the schema. Safe to call on every connection.
  */
 export function migrate(db: DatabaseSync): void {
-  const row = db.prepare("PRAGMA user_version").get() as
-    { user_version: number } | undefined;
-  const currentVersion = Number(row?.user_version ?? 0);
+  const row = db.prepare("PRAGMA user_version").get() as { user_version: number } | undefined;
+  const currentVersion = row?.user_version ?? 0;
 
-  if (currentVersion >= SCHEMA_VERSION) return;
+  if (currentVersion >= SCHEMA_VERSION) {
+    return;
+  }
 
   db.exec("BEGIN");
   try {

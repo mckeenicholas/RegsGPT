@@ -1,8 +1,8 @@
 import type { APIEvent } from "@solidjs/start/server";
-import { authenticateRequest } from "~/lib/server/services/auth";
 import { getForUser, setTitle, touch } from "~/lib/server/db/models/Conversation";
 import { createMessage, listByConversation } from "~/lib/server/db/models/Message";
 import { recordRequest } from "~/lib/server/db/models/User";
+import { authenticateRequest } from "~/lib/server/services/auth";
 import { streamChat, isOverRequestCap, type ChatMessage } from "~/lib/server/services/gemini";
 
 /**
@@ -31,7 +31,7 @@ export async function POST(event: APIEvent) {
     }
 
     // Check request cap
-    const today = new Date().toISOString().split("T")[0];
+    const [today] = new Date().toISOString().split("T");
     const requestsUsed = user.lastRequestDate === today ? user.requestsUsedToday : 0;
     const requestCap = Number(process.env.REQUEST_CAP) || 50;
 
@@ -80,7 +80,7 @@ export async function POST(event: APIEvent) {
     // message (e.g. a retry after a failed stream), reuse it instead of saving
     // a duplicate.
     const existingMessages = listByConversation(conversation.internalId);
-    const lastMessage = existingMessages[existingMessages.length - 1];
+    const lastMessage = existingMessages.at(-1);
 
     const userMessage =
       lastMessage?.role === "user" && lastMessage.content === message.trim()
@@ -133,7 +133,7 @@ export async function POST(event: APIEvent) {
           // Auto-generate conversation title from first user message
           if (conversation.title === "New Chat") {
             const title =
-              message.trim().length > 50 ? message.trim().slice(0, 50) + "..." : message.trim();
+              message.trim().length > 50 ? `${message.trim().slice(0, 50)}...` : message.trim();
             setTitle(conversation.internalId, title);
           } else {
             touch(conversation.internalId);

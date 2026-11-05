@@ -1,4 +1,4 @@
-import { Component, Show, createSignal, onMount } from "solid-js";
+import { Show, createSignal, onMount, type Component } from "solid-js";
 
 // WCA OAuth config — these are public (client-side safe)
 const WCA_URL = import.meta.env.VITE_WCA_URL;
@@ -10,10 +10,10 @@ const LoginPage: Component = () => {
 
   // Check for auth error from server redirect
   onMount(() => {
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(globalThis.location.search);
     if (urlParams.get("auth_error")) {
       setError("Authentication failed. Please try again.");
-      window.history.replaceState({}, "", window.location.pathname);
+      globalThis.history.replaceState({}, "", globalThis.location.pathname);
     }
   });
 

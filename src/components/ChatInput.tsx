@@ -1,4 +1,4 @@
-import { Component, createSignal, createEffect } from "solid-js";
+import { createEffect, createSignal, type Component } from "solid-js";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -8,7 +8,7 @@ interface ChatInputProps {
 
 const ChatInput: Component<ChatInputProps> = (props) => {
   let textareaRef: HTMLTextAreaElement | undefined;
-  const [value, setValue] = createSignal(props.initialValue || "");
+  const [value, setValue] = createSignal(props.initialValue ?? "");
 
   createEffect(() => {
     if (props.initialValue && props.initialValue !== value()) {
@@ -24,13 +24,15 @@ const ChatInput: Component<ChatInputProps> = (props) => {
   const autoResize = () => {
     if (textareaRef) {
       textareaRef.style.height = "auto";
-      textareaRef.style.height = Math.min(textareaRef.scrollHeight, 150) + "px";
+      textareaRef.style.height = `${Math.min(textareaRef.scrollHeight, 150)}px`;
     }
   };
 
   const handleSubmit = () => {
     const msg = value().trim();
-    if (!msg || props.disabled) return;
+    if (!msg || props.disabled) {
+      return;
+    }
     props.onSend(msg);
     setValue("");
     if (textareaRef) {
@@ -51,7 +53,9 @@ const ChatInput: Component<ChatInputProps> = (props) => {
       <div class="mx-auto max-w-3xl">
         <div class="flex items-end gap-2 rounded-xl border border-border bg-bg-secondary px-3 py-2 transition-colors focus-within:border-accent focus-within:shadow-[0_0_0_2px_rgba(56,189,248,0.15)]">
           <textarea
-            ref={textareaRef}
+            ref={(el) => {
+              textareaRef = el;
+            }}
             class="max-h-37.5 min-h-8 flex-1 resize-none border-none bg-transparent py-1.5 text-sm leading-5 text-text-primary outline-none placeholder:text-text-muted"
             placeholder="Ask about WCA regulations, guidelines, or precedents"
             value={value()}

@@ -37,9 +37,9 @@ export function mapUserRow(row: UserRow): User {
 
 export function getUserById(wcaUserId: number): User | null {
   const db = getDB();
-  const row = db
-    .prepare("SELECT * FROM users WHERE wca_user_id = ?")
-    .get(wcaUserId) as UserRow | undefined;
+  const row = db.prepare("SELECT * FROM users WHERE wca_user_id = ?").get(wcaUserId) as
+    | UserRow
+    | undefined;
   return row ? mapUserRow(row) : null;
 }
 

@@ -37,17 +37,25 @@ export async function streamChatRequest(
   let serverError: string | null = null;
 
   while (true) {
+    // Streaming inherently requires reading chunk-by-chunk.
+    // oxlint-disable-next-line no-await-in-loop
     const { done: streamDone, value } = await reader.read();
-    if (streamDone) break;
+    if (streamDone) {
+      break;
+    }
 
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split("\n");
-    buffer = lines.pop() || "";
+    buffer = lines.pop() ?? "";
 
     for (const line of lines) {
-      if (!line.startsWith("data: ")) continue;
+      if (!line.startsWith("data: ")) {
+        continue;
+      }
       const jsonStr = line.slice(6).trim();
-      if (!jsonStr) continue;
+      if (!jsonStr) {
+        continue;
+      }
 
       let event: any;
       try {
@@ -60,12 +68,10 @@ export async function streamChatRequest(
         fullResponse += event.text;
         options.onChunk?.(fullResponse);
       } else if (event.type === "done") {
-        tokensUsed =
-          typeof event.tokensUsed === "number" ? event.tokensUsed : 0;
+        tokensUsed = typeof event.tokensUsed === "number" ? event.tokensUsed : 0;
         done = true;
       } else if (event.type === "error") {
-        serverError =
-          typeof event.message === "string" ? event.message : "Unknown error";
+        serverError = typeof event.message === "string" ? event.message : "Unknown error";
       }
     }
   }

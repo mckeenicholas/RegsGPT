@@ -3,22 +3,20 @@ import { dirname, isAbsolute, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { migrate } from "./schema";
 
-type DBCache = { db: DatabaseSync | null };
+interface DBCache {
+  db: DatabaseSync | null;
+}
 
 const globalCache = globalThis as typeof globalThis & {
-  __regsgptDB?: DBCache;
+  regsgptDbCache?: DBCache;
 };
 
-if (!globalCache.__regsgptDB) {
-  globalCache.__regsgptDB = { db: null };
-}
+globalCache.regsgptDbCache ??= { db: null };
 
 function resolveDatabasePath(): string {
   const configured = process.env.DATABASE_PATH;
   if (configured) {
-    return isAbsolute(configured)
-      ? configured
-      : resolve(process.cwd(), configured);
+    return isAbsolute(configured) ? configured : resolve(process.cwd(), configured);
   }
   return resolve(process.cwd(), "data", "regsgpt.db");
 }
@@ -29,8 +27,10 @@ function resolveDatabasePath(): string {
  * dev-server hot reloads do not leak file handles.
  */
 export function getDB(): DatabaseSync {
-  const cached = globalCache.__regsgptDB!;
-  if (cached.db) return cached.db;
+  const cached = globalCache.regsgptDbCache!;
+  if (cached.db) {
+    return cached.db;
+  }
 
   const path = resolveDatabasePath();
   mkdirSync(dirname(path), { recursive: true });
@@ -52,8 +52,10 @@ export function getDB(): DatabaseSync {
  * exit cleanly.
  */
 export function closeDB(): void {
-  const cached = globalCache.__regsgptDB!;
-  if (!cached.db) return;
+  const cached = globalCache.regsgptDbCache!;
+  if (!cached.db) {
+    return;
+  }
   cached.db.close();
   cached.db = null;
 }

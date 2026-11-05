@@ -41,13 +41,10 @@ export function listByUser(userId: number): Conversation[] {
        ORDER BY updated_at DESC, id DESC`,
     )
     .all(userId) as unknown as ConversationRow[];
-  return rows.map(mapConversation);
+  return rows.map((row) => mapConversation(row));
 }
 
-export function getForUser(
-  publicId: string,
-  userId: number,
-): Conversation | null {
+export function getForUser(publicId: string, userId: number): Conversation | null {
   const db = getDB();
   const row = db
     .prepare("SELECT * FROM conversations WHERE public_id = ? AND user_id = ?")
@@ -55,10 +52,7 @@ export function getForUser(
   return row ? mapConversation(row) : null;
 }
 
-export function createConversation(
-  userId: number,
-  title = "New Chat",
-): Conversation {
+export function createConversation(userId: number, title = "New Chat"): Conversation {
   const db = getDB();
   const now = Date.now();
   const publicId = randomUUID();
@@ -77,9 +71,11 @@ export function createConversation(
 
 export function setTitle(conversationId: number, title: string): void {
   const db = getDB();
-  db.prepare(
-    "UPDATE conversations SET title = ?, updated_at = ? WHERE id = ?",
-  ).run(title, Date.now(), conversationId);
+  db.prepare("UPDATE conversations SET title = ?, updated_at = ? WHERE id = ?").run(
+    title,
+    Date.now(),
+    conversationId,
+  );
 }
 
 export function touch(conversationId: number): void {

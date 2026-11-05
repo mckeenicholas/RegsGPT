@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import { findOrCreateUser as upsertUser, type User } from "../db/models/User";
 import {
   createSession as insertSession,
   deleteAllUserSessions as removeAllUserSessions,
@@ -9,16 +8,17 @@ import {
   getSessionByToken,
   updateWCATokens,
 } from "../db/models/Session";
+import { findOrCreateUser as upsertUser, type User } from "../db/models/User";
 
 const SESSION_DURATION_DAYS = 30;
 
 // WCA OAuth config — read from env at runtime
 function getWCAConfig() {
   return {
-    WCA_URL: process.env.WCA_URL || "https://www.worldcubeassociation.org",
-    APPLICATION_ID: process.env.WCA_APPLICATION_ID || "",
-    APPLICATION_SECRET: process.env.WCA_APPLICATION_SECRET || "",
-    REDIRECT_URI: process.env.WCA_REDIRECT_URI || "http://localhost:5173",
+    WCA_URL: process.env.WCA_URL ?? "https://www.worldcubeassociation.org",
+    APPLICATION_ID: process.env.WCA_APPLICATION_ID ?? "",
+    APPLICATION_SECRET: process.env.WCA_APPLICATION_SECRET ?? "",
+    REDIRECT_URI: process.env.WCA_REDIRECT_URI ?? "http://localhost:5173",
   };
 }
 
@@ -50,11 +50,8 @@ interface WCAUserResponseInfo {
 /**
  * Exchange an authorization code for WCA OAuth tokens.
  */
-export async function exchangeWCACode(
-  accessCode: string,
-): Promise<WCAOauthResponse> {
-  const { WCA_URL, APPLICATION_ID, APPLICATION_SECRET, REDIRECT_URI } =
-    getWCAConfig();
+export async function exchangeWCACode(accessCode: string): Promise<WCAOauthResponse> {
+  const { WCA_URL, APPLICATION_ID, APPLICATION_SECRET, REDIRECT_URI } = getWCAConfig();
 
   const response = await fetch(`${WCA_URL}/oauth/token`, {
     method: "POST",
@@ -70,10 +67,7 @@ export async function exchangeWCACode(
 
   if (!response.ok) {
     const text = await response.text();
-    console.error(
-      `[WCA OAuth] Token exchange failed: ${response.status}`,
-      text,
-    );
+    console.error(`[WCA OAuth] Token exchange failed: ${response.status}`, text);
     throw new Error(`WCA token exchange failed: ${response.status}`);
   }
 
@@ -83,9 +77,7 @@ export async function exchangeWCACode(
 /**
  * Refresh an expired WCA access token.
  */
-export async function refreshWCAToken(
-  refreshToken: string,
-): Promise<WCAOauthResponse> {
+export async function refreshWCAToken(refreshToken: string): Promise<WCAOauthResponse> {
   const { WCA_URL, APPLICATION_ID, APPLICATION_SECRET } = getWCAConfig();
 
   const response = await fetch(`${WCA_URL}/oauth/token`, {
@@ -109,9 +101,7 @@ export async function refreshWCAToken(
 /**
  * Fetch the authenticated user's info from the WCA API.
  */
-export async function fetchWCAUser(
-  accessToken: string,
-): Promise<WCAUserResponseInfo> {
+export async function fetchWCAUser(accessToken: string): Promise<WCAUserResponseInfo> {
   const { WCA_URL } = getWCAConfig();
 
   const response = await fetch(`${WCA_URL}/api/v0/me`, {
@@ -128,11 +118,11 @@ export async function fetchWCAUser(
 /**
  * Get (and auto-refresh if expired) the WCA access token for a session.
  */
-export async function getWCAToken(
-  sessionToken: string,
-): Promise<string | null> {
+export async function getWCAToken(sessionToken: string): Promise<string | null> {
   const session = getSessionByToken(sessionToken);
-  if (!session) return null;
+  if (!session) {
+    return null;
+  }
 
   const now = Date.now();
 
@@ -140,9 +130,7 @@ export async function getWCAToken(
     // Token expired — refresh it
     try {
       const newTokens = await refreshWCAToken(session.wcaRefreshToken);
-      const newExpiry = new Date(
-        newTokens.created_at * 1000 + newTokens.expires_in * 1000,
-      );
+      const newExpiry = new Date(newTokens.created_at * 1000 + newTokens.expires_in * 1000);
 
       updateWCATokens(session.id, {
         wcaToken: newTokens.access_token,
@@ -151,8 +139,8 @@ export async function getWCAToken(
       });
 
       return newTokens.access_token;
-    } catch (err) {
-      console.error("[Auth] Failed to refresh WCA token:", err);
+    } catch (error) {
+      console.error("[Auth] Failed to refresh WCA token:", error);
       // Delete the session if refresh fails (user needs to re-auth)
       removeSession(sessionToken);
       return null;
@@ -194,7 +182,9 @@ export async function createSession(
  * Validate a session token. Returns the user if valid, null otherwise.
  */
 export async function validateSession(token: string): Promise<User | null> {
-  if (!token) return null;
+  if (!token) {
+    return null;
+  }
 
   // SQLite has no TTL index, so purge expired sessions opportunistically.
   deleteExpiredSessions();
@@ -221,19 +211,19 @@ export async function deleteAllUserSessions(userId: number): Promise<void> {
  * Extract session token from a request's cookies.
  */
 export function getTokenFromRequest(request: Request): string | null {
-  const cookieHeader = request.headers.get("Cookie") || "";
-  const match = cookieHeader.match(/(?:^|;\s*)session_token=([^;]+)/);
+  const cookieHeader = request.headers.get("Cookie") ?? "";
+  const match = /(?:^|;\s*)session_token=([^;]+)/u.exec(cookieHeader);
   return match ? match[1] : null;
 }
 
 /**
  * Full auth flow: extract token from request → validate → return user or null.
  */
-export async function authenticateRequest(
-  request: Request,
-): Promise<User | null> {
+export async function authenticateRequest(request: Request): Promise<User | null> {
   const token = getTokenFromRequest(request);
-  if (!token) return null;
+  if (!token) {
+    return null;
+  }
   return validateSession(token);
 }
 

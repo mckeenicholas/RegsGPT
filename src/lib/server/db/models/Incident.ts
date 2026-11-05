@@ -78,7 +78,7 @@ export function listAll(): Incident[] {
   const rows = db
     .prepare("SELECT * FROM incidents ORDER BY incident_id DESC")
     .all() as unknown as IncidentRow[];
-  return rows.map(mapIncident);
+  return rows.map((row) => mapIncident(row));
 }
 
 /**
@@ -96,11 +96,9 @@ export function upsertMany(incidents: IncidentInput[]): {
   const db = getDB();
   const existing = new Set(
     (
-      db
-        .prepare("SELECT incident_id FROM incidents")
-        .all() as unknown as Array<{
+      db.prepare("SELECT incident_id FROM incidents").all() as unknown as {
         incident_id: number;
-      }>
+      }[]
     ).map((row) => row.incident_id),
   );
 

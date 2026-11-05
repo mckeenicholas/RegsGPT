@@ -1,6 +1,5 @@
-import { query, action, redirect } from "@solidjs/router";
 import { getRequestEvent } from "solid-js/web";
-import { authenticateRequest } from "~/lib/server/services/auth";
+import { query, action, redirect } from "@solidjs/router";
 import {
   createConversation,
   deleteConversation,
@@ -8,6 +7,7 @@ import {
   listByUser,
 } from "~/lib/server/db/models/Conversation";
 import { listByConversation } from "~/lib/server/db/models/Message";
+import { authenticateRequest } from "~/lib/server/services/auth";
 
 function isValidPublicId(id: string): boolean {
   return typeof id === "string" && id.length > 0 && id.length <= 64;
@@ -16,7 +16,9 @@ function isValidPublicId(id: string): boolean {
 export const getConversationsQuery = query(async () => {
   "use server";
   const event = getRequestEvent();
-  if (!event) throw new Error("No request event");
+  if (!event) {
+    throw new Error("No request event");
+  }
 
   const user = await authenticateRequest(event.request);
   if (!user) {
@@ -36,7 +38,9 @@ export const getConversationsQuery = query(async () => {
 export const getMessagesQuery = query(async (id: string) => {
   "use server";
   const event = getRequestEvent();
-  if (!event) throw new Error("No request event");
+  if (!event) {
+    throw new Error("No request event");
+  }
 
   const user = await authenticateRequest(event.request);
   if (!user) {
@@ -72,7 +76,9 @@ export const getMessagesQuery = query(async (id: string) => {
 export const createConversationAction = action(async () => {
   "use server";
   const event = getRequestEvent();
-  if (!event) throw new Error("No request event");
+  if (!event) {
+    throw new Error("No request event");
+  }
 
   const user = await authenticateRequest(event.request);
   if (!user) {
@@ -87,7 +93,9 @@ export const createConversationAction = action(async () => {
 export async function createConversationRPC() {
   "use server";
   const event = getRequestEvent();
-  if (!event) throw new Error("No request event");
+  if (!event) {
+    throw new Error("No request event");
+  }
 
   const user = await authenticateRequest(event.request);
   if (!user) {
@@ -102,7 +110,9 @@ export async function createConversationRPC() {
 export const deleteConversationAction = action(async (id: string) => {
   "use server";
   const event = getRequestEvent();
-  if (!event) throw new Error("No request event");
+  if (!event) {
+    throw new Error("No request event");
+  }
 
   const user = await authenticateRequest(event.request);
   if (!user) {
@@ -115,7 +125,9 @@ export const deleteConversationAction = action(async (id: string) => {
 
   // Messages are removed by the foreign-key cascade.
   const deleted = deleteConversation(id, user.id);
-  if (!deleted) return { success: false, error: "Not found" };
+  if (!deleted) {
+    return { success: false, error: "Not found" };
+  }
 
   return { success: true };
 }, "deleteConversation");
