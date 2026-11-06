@@ -1,13 +1,8 @@
-import { readFileSync } from "fs";
-import { join } from "path";
+import promptTemplate from "../data/prompt.txt?raw";
+import regulations from "../data/regs.md?raw";
 import { listAll as listIncidents } from "../db/models/Incident";
 
 let cachedSystemPrompt: string | null = null;
-
-function loadFile(filename: string): string {
-  const dataDir = join(process.cwd(), "src", "lib", "server", "data");
-  return readFileSync(join(dataDir, filename), "utf8");
-}
 
 /**
  * Format incidents into a compact text representation for the LLM context.
@@ -51,10 +46,6 @@ export async function getSystemPrompt(): Promise<string> {
   if (cachedSystemPrompt) {
     return cachedSystemPrompt;
   }
-
-  // Load static files
-  const promptTemplate = loadFile("prompt.txt");
-  const regulations = loadFile("regs.md");
 
   // Load incidents from DB
   let incidentText: string;
