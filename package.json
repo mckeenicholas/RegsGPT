@@ -5,7 +5,8 @@
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
-    "fetch-incidents": "bun run scripts/fetch-incidents.ts"
+    "fetch-incidents": "bun run scripts/fetch-incidents.ts",
+    "migrate-mongo": "bun run scripts/migrate-mongo-to-sqlite.ts"
   },
   "dependencies": {
     "@google/genai": "^2.32.0",
@@ -20,6 +21,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.4",
     "eslint-plugin-solid": "^0.18.1",
+    "mongodb": "^7.8.0",
     "tailwindcss": "^4.3.4"
   },
   "engines": {
